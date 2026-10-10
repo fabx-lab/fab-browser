@@ -1,4 +1,16 @@
 const address = /^0x[\da-f]{40}$/i;
+export function parseBrowserTarget(raw,apps){
+ try{return {...parseTarget(raw,apps),kind:'application'};}catch(error){
+  const text=String(raw).trim();
+  const candidate=/^https?:\/\//i.test(text)?text:/^(?:[\w-]+\.)+[a-z][\w-]*(?::\d+)?(?:[/?#].*)?$/i.test(text)?`https://${text}`:null;
+  if(!candidate)throw error;
+  const u=new URL(candidate);
+  if(!/^https?:$/.test(u.protocol)||u.username||u.password)throw error;
+  // A configured FAB gateway must always go through chain verification.
+  if(apps.some(a=>safeOrigin(a.gateway)===u.origin))throw error;
+  return {kind:'web',url:u.href,title:u.hostname};
+ }
+}
 export function safeOrigin(value) {
   const u = new URL(value);
   if (u.protocol !== 'https:' || u.username || u.password || u.pathname !== '/' || u.search || u.hash) throw new Error('Gateway must be a bare HTTPS origin');

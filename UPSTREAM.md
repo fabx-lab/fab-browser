@@ -9,9 +9,10 @@ An earlier investigation incorrectly limited lookup to the TapeOutProtocol accou
 | FAB module | TapeBrowser source reference | Adaptation |
 |---|---|---|
 | src/library.mjs | src/main/library.js | Atomic local library persistence, per-application history deduplication and bookmarks; canonical FAB container identity replaces tape scheme names. |
-| src/navigation.mjs | src/main/address.js and tabs.js | Input classification and origin guards reimplemented for configured FAB circuit/container/HTTPS identities, not official tape names or wallet scanning. |
-| electron/main.mjs | src/main/tabs.js and main.js | WebContentsView browser content isolated from trusted shell; no application preload; stricter navigation to registered HTTPS release origins. |
-| ui/ | src/ui/ui.js | Address, navigation, local library and status responsibilities adapted into a small FAB interface. No claim of full upstream tab/directory/wallet feature parity. |
+| src/navigation.mjs | src/main/address.js and tabs.js | Input classification and origin guards reimplemented for configured FAB circuit/container/HTTPS identities, ordinary HTTP/HTTPS inputs use separate sessions; official tape names and wallet scanning remain pending. |
+| electron/main.mjs and application-tabs.mjs | src/main/tabs.js and main.js | WebContentsView browser content isolated from trusted shell; no application preload; stricter navigation to registered HTTPS release origins. |
+| electron/browser-menu.mjs and context-menu.mjs | src/main/main.js and tabs.js | Native browser menus, context actions, page search and per-tab zoom; FAB chain verification remains separate. |
+| ui/ | src/ui/ui.js | Address, navigation, local library and status responsibilities adapted into a small FAB interface. Includes real per-tab application views and blank tabs; does not claim upstream directory/wallet feature parity. |
 
 Additional protocol/design reference: TapeOutProtocol/TapeKit at commit `4c0fdfabebab83a3d9d2968ebe38c833bcddab51`, especially apps/tapesend/electron/main.mjs and preload.cjs. Its MIT copyright notice is retained in vendor/TapeKit-LICENSE. It is not the primary TapeBrowser upstream.
 
