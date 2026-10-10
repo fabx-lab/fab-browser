@@ -11,11 +11,37 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
  await fs.mkdir(output,{recursive:true});
  let fixture,walletSocket,localRoot;
  const shot=async(name,wc)=>{await wc.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');const image=await wc.capturePage();if(image.isEmpty())throw new Error(`Empty screenshot: ${name}`);await fs.writeFile(path.join(output,name),image.toPNG());};
+ // Start-page entries open their app in a new tab; close the start tab they were opened from.
+ const closeStartTab=async()=>{const left=await chrome.webContents.executeJavaScript(`(async()=>{const n=document.querySelectorAll('[role="tab"]').length;if(n<2)return -1;document.querySelectorAll('.tab-close')[n-2].click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==n-1&&Date.now()<end)await new Promise(r=>setTimeout(r,50));return document.querySelectorAll('[role="tab"]').length;})()`);assert.ok(left>=1,'A start-page entry must open a new tab');};
  try{
-  await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while(document.body.dataset.uiReady!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));if(document.body.dataset.uiReady!=='true')throw Error('Shell initialization timeout');document.querySelector('#start-demo').click();})()`);
+  await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while(document.body.dataset.uiReady!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));if(document.body.dataset.uiReady!=='true')throw Error('Shell initialization timeout');while(document.body.dataset.welcomeReady!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
+  // The launch plays over the first window; let it finish before reading the welcome.
+  await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+8000;while(document.body.dataset.launched!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));if(document.body.dataset.launched!=='true')throw Error('Launch did not finish');})()`);
+  assert.equal(await chrome.webContents.executeJavaScript("document.querySelector('#launch')"),null,'The launch must leave nothing behind');report.launch=true;
+  // A fresh profile starts with the welcome pages over the window; walk all of them.
+  assert.equal(await chrome.webContents.executeJavaScript("document.querySelector('#welcome').hidden"),false,'First launch must show the welcome');
+  for(let i=0;i<5;i++){await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,400))');await shot(`welcome-${i}.png`,chrome.webContents);await chrome.webContents.executeJavaScript("document.querySelector('#welcome-next').click()");}
+  await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,100))');
+  assert.equal(await chrome.webContents.executeJavaScript("document.querySelector('#welcome').hidden"),true,'Finishing the welcome must close it');
+  report.welcome={pages:5,closed:true};
+  assert.equal(await chrome.webContents.executeJavaScript("document.querySelector('#start-page').scrollTop"),0,'The start page opens at its top');
+  await shot('start.png',chrome.webContents);
+  await chrome.webContents.executeJavaScript("window.fabBrowser.saveAppearance('dark')");await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,200))');
+  assert.equal(await chrome.webContents.executeJavaScript("matchMedia('(prefers-color-scheme: dark)').matches"),true,'Dark appearance must reach the shell');
+  await shot('start-dark.png',chrome.webContents);
+  await chrome.webContents.executeJavaScript("window.fabBrowser.saveAppearance('system')");report.appearance=true;
+  // The wallet panel opens from the top corner; with no wallet it offers create, import, or an extension.
+  await chrome.webContents.executeJavaScript("document.querySelector('#wallet-button').click()");await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,300))');
+  report.walletPanel=await chrome.webContents.executeJavaScript(`(()=>{const p=document.querySelector('#wallet-panel'),r=p.getBoundingClientRect();return {open:!p.hidden,buttons:[...p.querySelectorAll('button')].map(b=>b.textContent),inside:r.right<=innerWidth&&r.bottom<=innerHeight,expanded:document.querySelector('#wallet-button').getAttribute('aria-expanded')};})()`);
+  assert.equal(report.walletPanel.open,true,'Wallet panel must open');assert.equal(report.walletPanel.inside,true);assert.equal(report.walletPanel.buttons.length,3,'Create, import, and the extension link');
+  await shot('wallet-panel.png',chrome.webContents);
+  await chrome.webContents.executeJavaScript("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  assert.equal(await chrome.webContents.executeJavaScript("document.querySelector('#wallet-panel').hidden"),true,'Escape closes the wallet panel');
+  await chrome.webContents.executeJavaScript("document.querySelector('#start-demo').click()");
   await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+60000;while(!['ready','error'].includes(document.body.dataset.state)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));})()`);
   report.latest=getState();
   assert.equal(report.latest?.status,'ready',report.latest?.message||'Latest application did not become ready');
+  await closeStartTab();
   // The NFT holder may publish a different application while tests run.
   // Pin the historical Gomoku release; never require the live latest to stay a game.
   await chrome.webContents.executeJavaScript(`window.fabBrowser.navigate(${JSON.stringify(report.latest.gateway+'/v/2/index.html')})`);
@@ -34,6 +60,7 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#new-tab').click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==2&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
   assert.equal(getSite(),null,'New tab must start blank');
   await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#start-demo').click();const end=Date.now()+60000;while(!['ready','error'].includes(document.body.dataset.state)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));})()`);
+  await closeStartTab();
   assert.equal(getState().status,'ready',getState().message);
   const second=getSite();assert.notEqual(second,site);
   assert.equal(await second.webContents.executeJavaScript("document.querySelectorAll('#board .stone').length"),0,'Second tab must have a fresh board');
@@ -43,6 +70,37 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   assert.equal(await site.webContents.executeJavaScript("document.querySelectorAll('#board .stone').length"),2,'Switching must preserve the game');
   await chrome.webContents.executeJavaScript(`(async()=>{document.querySelectorAll('.tab-close')[1].click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==1&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
   assert.equal(getSite(),site);report.tabs={newBlank:true,independentBoards:true,preservedOnSwitch:true,closePreservesOther:true};
+  // Every published app is listed; one without a configured gateway opens through the FAB template, still chain-checked.
+  const sudoku='0xab69eff9919a28fa9c69eae6b0dc1ddd2ec7b878';
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#new-tab').click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==2&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
+  report.store=await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while(document.body.dataset.storeReady!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));return {rows:document.querySelectorAll('#store-list .store-row').length};})()`);
+  assert.ok(report.store.rows>=24,'The storefront lists every published app');
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#start-page').scrollTop=1e5;await new Promise(r=>setTimeout(r,300));})()`);await shot('store.png',chrome.webContents);
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#start-page').scrollTop=0;const row=document.querySelector('#store-list [data-container="${sudoku}"]');window.__clicked=row.querySelector('b').textContent;row.click();window.__input=document.querySelector('#input').value;const end=Date.now()+60000;while(!['ready','error'].includes(document.body.dataset.state)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));})()`);
+  await closeStartTab();
+  report.store.clicked=await chrome.webContents.executeJavaScript('({clicked:window.__clicked,input:window.__input,tabs:[...document.querySelectorAll(\'[role="tab"]\')].map(t=>t.title)})');
+  assert.equal(getState()?.status,'ready',getState()?.message||'Sudoku did not become ready');
+  assert.equal(getState().container.toLowerCase(),sudoku);assert.match(getState().gateway,/^https:\/\/r2-ab69eff9919a28fa9c69eae6b0dc1ddd2ec7b878-deweb-test\.fabx\.tech/);
+  assert.equal(await chrome.webContents.executeJavaScript('document.body.dataset.kind'),'chain');
+  report.store.templateApp={version:getState().version,cid:getState().cid};
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelectorAll('.tab-close')[1].click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==1&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
+  // The featured Hold'em application opens from the start page through the same chain check.
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#new-tab').click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==2&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelector('#start-poker').click();const end=Date.now()+60000;while(!['ready','error'].includes(document.body.dataset.state)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));})()`);
+  await closeStartTab();
+  const poker=getState();
+  assert.equal(poker?.status,'ready',poker?.message||'Hold\'em did not become ready');
+  assert.equal(poker.container.toLowerCase(),'0xd9f72ba8176ca64cfda991f39ae1ed035c4cc8ce');
+  assert.ok(poker.kind!=='web'&&!poker.offline&&poker.cid&&poker.version,'Hold\'em must open as a chain-checked release');
+  assert.equal(await chrome.webContents.executeJavaScript('document.body.dataset.kind'),'chain');
+  // The holder may publish a different latest release; pin version 1 for the rendering checks.
+  await chrome.webContents.executeJavaScript(`window.fabBrowser.navigate(${JSON.stringify(poker.gateway+'/v/1/index.html')})`);
+  assert.equal(getState()?.status,'ready',getState()?.message||'Historical Hold\'em did not become ready');assert.equal(getState().version,'1');
+  report.poker={latest:poker.version,version:getState().version,cid:getState().cid,title:await getSite().webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while((document.title!=='德州扑克'||document.body.innerText.trim().length<20)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));await new Promise(r=>setTimeout(r,600));return document.title;})()`),text:await getSite().webContents.executeJavaScript('document.body.innerText.trim().length')};
+  assert.equal(report.poker.title,'德州扑克');assert.ok(report.poker.text>=20,'Hold\'em must render: inline blocks are allowed by their hashes');
+  await shot('poker.png',getSite().webContents);await shot('shell-poker.png',chrome.webContents);
+  await chrome.webContents.executeJavaScript(`(async()=>{document.querySelectorAll('.tab-close')[1].click();const end=Date.now()+10000;while(document.querySelectorAll('[role="tab"]').length!==1&&Date.now()<end)await new Promise(r=>setTimeout(r,50));})()`);
+  assert.equal(getSite(),site,'Closing Hold\'em must return to the game');
 
   // Native page search and zoom must operate on the selected website, not the shell.
   await chrome.webContents.executeJavaScript("document.querySelector('#find-button').click()");
@@ -53,21 +111,24 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,100))');assert.equal(site.webContents.getZoomFactor(),1);
   await chrome.webContents.executeJavaScript("document.querySelector('#find-close').click()");
   await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,100))');
-  assert.equal(site.getBounds().y,96);report.controls={find:matches,zoomReset:true};
+  assert.equal(site.getBounds().y,0);assert.equal(site.getBounds().x,240);report.controls={find:matches,zoomReset:true};
 
   report.layouts=[];
   for(const [width,height] of [[1280,900],[800,700],[390,844]]){
    window.setContentSize(width,height);
-   await chrome.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
-   const result=await chrome.webContents.executeJavaScript(`({width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth,toolbarHeight:document.querySelector('.toolbar').getBoundingClientRect().height})`);
+   await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,150))');
+   const result=await chrome.webContents.executeJavaScript(`({width:innerWidth,height:innerHeight,overflow:document.documentElement.scrollWidth>innerWidth,addressHeight:document.querySelector('.address').getBoundingClientRect().height,layout:document.body.dataset.layout})`);
    result.applicationBounds=site.getBounds();report.layouts.push(result);
    assert.equal(result.overflow,false,`Shell overflow at ${width}`);
    await shot(`shell-${width}.png`,chrome.webContents);
+   assert.equal(site.getBounds().y,width>=700?0:44,'Wide windows hold tabs beside the page, narrow ones in the bar');
    await chrome.webContents.executeJavaScript("document.querySelector('#panel-toggle').click()");
-   await chrome.webContents.executeJavaScript('new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))');
+   await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,150))');
    await shot(`sidebar-${width}.png`,chrome.webContents);
-   assert.equal(site.getVisible(),width>=700,'Narrow sidebar must hide game; wide sidebar must preserve it');
-   await chrome.webContents.executeJavaScript("document.querySelector('#panel-close').click()");
+   assert.equal(site.getVisible(),width>=700,'Narrow tab column must hide game; wide tab strip must preserve it');
+   if(width>=700)assert.equal(site.getBounds().y,44,'Tab strip sits above the page');
+   await chrome.webContents.executeJavaScript(width>=700?"document.querySelector('#panel-toggle').click()":"document.querySelector('#panel-close').click()");
+   await chrome.webContents.executeJavaScript('new Promise(resolve=>setTimeout(resolve,150))');
   }
   window.setContentSize(1280,900);
   assert.equal(report.page.node,'undefined');assert.equal(report.page.bridge,'undefined');
@@ -98,6 +159,37 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   assert.deepEqual(await web.webContents.executeJavaScript("window.ethereum.request({method:'eth_accounts'})"),[]);
   report.wallet={fixture:true,chainId:'0xc4',connectDenied:true,connectApproved:true,signatureForwarded:true,manualChainSwitch:true,revocation:true,realExtension:false,realTransactions:0};
   await chrome.webContents.executeJavaScript('window.fabBrowser.walletDisconnect()');walletSocket.terminate();walletSocket=null;
+  // Built-in wallet through the real panel: create, back up, connect a site, sign, lock, unlock, delete.
+  const ui=code=>chrome.webContents.executeJavaScript(code),pause=ms=>ui(`new Promise(resolve=>setTimeout(resolve,${ms}))`);
+  const until=check=>ui(`(async()=>{const end=Date.now()+15000;while(!(${check})&&Date.now()<end)await new Promise(r=>setTimeout(r,100));return !!(${check});})()`);
+  const submit=(values)=>ui(`(()=>{const f=document.querySelector('#wallet-panel form');const inputs=[...f.querySelectorAll('input,textarea')];${JSON.stringify(values)}.forEach((v,i)=>{inputs[i].value=v;});f.requestSubmit();})()`);
+  await ui("document.querySelector('#wallet-button').click()");await pause(200);
+  await ui("document.querySelector('#wallet-panel .button.primary').click()");await pause(100);
+  await submit(['smoke-password-1','smoke-password-1']);
+  assert.equal(await until("document.querySelectorAll('#wallet-panel .wallet-words li').length===12"),true,'A new wallet shows its 12 words');
+  await pause(250);await shot('wallet-words.png',chrome.webContents);
+  await ui("document.querySelector('#wallet-panel .button.primary').click()");
+  let builtIn=await ui('window.fabBrowser.walletStatus()');
+  assert.equal(builtIn.builtIn,true);assert.equal(builtIn.ready,true);assert.match(builtIn.accounts[0],/^0x[0-9a-f]{40}$/);
+  assert.equal(await until("document.querySelector('#wallet-panel .wallet-balance')"),true);await pause(800);await shot('wallet-unlocked.png',chrome.webContents);
+  await ui("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  controls.response=1;
+  assert.deepEqual(await web.webContents.executeJavaScript("window.ethereum.request({method:'eth_requestAccounts'})"),[builtIn.accounts[0]]);
+  const localSignature=await web.webContents.executeJavaScript(`window.ethereum.request({method:'personal_sign',params:['0x74657374',${JSON.stringify(builtIn.accounts[0])}]})`);
+  assert.match(localSignature,/^0x[0-9a-f]{130}$/,'The built-in wallet signs');
+  await ui('window.fabBrowser.walletLock()');await pause(100);
+  assert.deepEqual(await web.webContents.executeJavaScript("window.ethereum.request({method:'eth_accounts'})"),[],'A locked wallet exposes no account');
+  await ui("document.querySelector('#wallet-button').click()");await pause(200);
+  assert.equal(await ui("document.querySelector('#wallet-label').textContent.length>0&&!!document.querySelector('#wallet-panel input[type=password]')"),true,'Locked wallet asks for its password');
+  await shot('wallet-locked.png',chrome.webContents);
+  await submit(['wrong-password']);assert.equal(await until("document.querySelector('#wallet-panel .wallet-error')"),true,'A wrong password is refused');
+  await submit(['smoke-password-1']);assert.equal(await until("document.querySelector('#wallet-panel .wallet-balance')"),true,'The right password unlocks');
+  await ui("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  await ui(`window.fabBrowser.walletRevoke(${JSON.stringify(new URL(webUrl).origin)})`);
+  await ui('window.fabBrowser.walletLock()');assert.equal(await ui('window.fabBrowser.walletForget()'),true);
+  assert.equal((await ui('window.fabBrowser.walletStatus()')).local.exists,false);
+  report.builtInWallet={created:true,words:12,siteSigned:true,lockHidesAccount:true,wrongPasswordRefused:true,unlocked:true,deleted:true,realTransactions:0};
+  controls.response=1;
   // Exercise actual file protocol, UI precheck and fs.watch reload.
   localRoot=await fs.mkdtemp(path.join(tmpdir(),'fab-preview-smoke-'));controls.folder=localRoot;
   await fs.writeFile(path.join(localRoot,'index.html'),'<title>Local preview fixture</title><script src="app.js"></script><h1>Preview</h1>');

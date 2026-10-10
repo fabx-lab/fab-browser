@@ -68,14 +68,14 @@ export function createAnalyzer({ tokenInfo = null, tr = fill } = {}) {
   }
 
   /** 交易：识别授权和转账，其他合约调用提示无法解读 */
-  async function analyzeTx(tx, net) {
+  async function analyzeTx(tx, net, cut = short) {
     const to = isAddr(tx.to) ? String(tx.to).toLowerCase() : null;
     const data = typeof tx.data === 'string' && /^0x[0-9a-fA-F]*$/.test(tx.data) ? tx.data : '0x';
     const value = big(tx.value) ?? 0n;
     const coin = net?.currency || tr('原生币');
     const lines = [];
     if (value > 0n && data.length >= 10) lines.push(tr('同时转出 {amount} {coin}', { amount: formatUnits(value), coin }));
-    const raw = data !== '0x' ? tr('调用数据：{data}（{bytes} 字节）', { data: short(data, 138), bytes: (data.length - 2) / 2 }) : null;
+    const raw = data !== '0x' ? tr('调用数据：{data}（{bytes} 字节）', { data: cut(data, 138), bytes: (data.length - 2) / 2 }) : null;
     const out = (level, title, more = []) => ({ level, title, lines: [...lines, ...more], raw });
 
     if (!tx.to) return out('warn', tr('部署新合约'), [tr('这笔交易会创建一个新的智能合约。')]);
@@ -159,12 +159,12 @@ export function createAnalyzer({ tokenInfo = null, tr = fill } = {}) {
   }
 
   /** 结构化数据签名：Permit、Permit2、Seaport 挂单等离线授权 */
-  async function analyzeTyped(rawData) {
+  async function analyzeTyped(rawData, cut = short) {
     let d = rawData;
     if (typeof d === 'string') { try { d = JSON.parse(d); } catch { d = null; } }
     let pretty = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);
     try { pretty = JSON.stringify(typeof rawData === 'string' ? JSON.parse(rawData) : rawData, null, 1); } catch { /* 原样显示 */ }
-    const raw = short(pretty);
+    const raw = cut(pretty);
     const out = (level, title, lines) => ({ level, title, lines, raw });
     // eth_signTypedData v1 是 [{type, name, value}] 数组，没有结构可以解读
     if (!d || typeof d !== 'object' || Array.isArray(d)) return out('warn', tr('签名结构化数据'), [tr('无法解读这份数据，请在钱包里仔细核对。')]);
@@ -219,12 +219,14 @@ export function createAnalyzer({ tokenInfo = null, tr = fill } = {}) {
   }
 
   /** 解读一个签名 / 交易请求 */
-  async function analyze(method, params, { net = null } = {}) {
+  // full: show the whole content, for a confirmation that is the final one (the built-in wallet).
+  async function analyze(method, params, { net = null, full = false } = {}) {
     const p = Array.isArray(params) ? params : [];
+    const cut = full ? (s) => s : short;
     switch (method) {
       case 'personal_sign': {
         const text = hexToText(p[0]);
-        const body = short(text ?? String(p[0] ?? ''));
+        const body = cut(text ?? String(p[0] ?? ''));
         // 登录签名（Sign-In with Ethereum）通常带 URI 和 Nonce，签了只证明你是地址主人
         return { level: 'info', title: tr('签名一段消息'), lines: [tr('签消息不会转走资产，但请确认内容是你认可的。')], raw: body };
       }
@@ -238,9 +240,9 @@ export function createAnalyzer({ tokenInfo = null, tr = fill } = {}) {
       case 'eth_signTypedData':
       case 'eth_signTypedData_v3':
       case 'eth_signTypedData_v4':
-        return analyzeTyped(method === 'eth_signTypedData' ? p[0] : p[1]);
+        return analyzeTyped(method === 'eth_signTypedData' ? p[0] : p[1], cut);
       case 'eth_sendTransaction':
-        return analyzeTx(p[0] || {}, net);
+        return analyzeTx(p[0] || {}, net, cut);
       default:
         return { level: 'warn', title: method, lines: [], raw: short(JSON.stringify(p)) };
     }

@@ -4,7 +4,7 @@ export function createApplicationTabs({window,WebContentsView,session,config,res
  const tabs=new Map();let sequence=0,activeId;
  const blank=()=>({status:'blank',message:'选择应用，无需钱包即可访问。'});
  const active=()=>tabs.get(activeId);
- const snapshot=()=>({activeId,tabs:[...tabs.values()].map(t=>({id:t.id,title:t.state.status==='loading'?'正在打开…':t.state.title||'新标签页',icon:t.state.icon||'',loading:!!t.state.pageLoading,status:t.state.status,url:t.state.url||'',target:t.target||''}))});
+ const snapshot=()=>({activeId,tabs:[...tabs.values()].map(t=>({id:t.id,title:t.state.status==='loading'?'正在打开…':t.state.title||'新标签页',icon:t.state.icon||'',loading:!!t.state.pageLoading,status:t.state.status,url:t.state.url||'',target:t.target||'',container:t.state.container||'',kind:t.state.kind||''}))});
  function layout(){const geometry=getLayout();for(const t of tabs.values())if(t.view){t.view.setBounds(geometry.application);t.view.setVisible(t.id===activeId&&t.state.status==='ready'&&!geometry.hideApplication);}}
  function push(){layout();onChange(snapshot());onState({...active().state,target:active().target||'',zoom:Math.round((active().view?.webContents.getZoomFactor?.()||1)*100),canGoBack:!!active().view?.webContents.navigationHistory?.canGoBack(),canGoForward:!!active().view?.webContents.navigationHistory?.canGoForward()});}
  function open(raw,{background=false}={}){if(!background)stopFind();const t={id:++sequence,target:'',request:0,state:blank(),view:null};tabs.set(t.id,t);if(!background||!activeId)activeId=t.id;push();if(raw)void navigate(raw,t.id);return t.id;}

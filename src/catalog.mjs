@@ -7,7 +7,7 @@ import {dirname} from 'node:path';
 const published=parseAbi(['event SitePublished(address indexed container,address indexed circuits,uint256 indexed tokenId,uint256 version,string cid,address publisher)']);
 const nftAbi=parseAbi(['function ownerOf(uint256) view returns (address)','function nextId() view returns (uint256)']);
 const factoryAbi=parseAbi(['function cpuCount() view returns (uint256)','function cpuAt(uint256) view returns (address)']);
-const deployTx='0xd7187657f38bb754774d0fcaee444b50045f4b5bb8136b5318533a59be274b36';
+const deployTx='0x441d63c8052111334fbb37650eab0d82a393ccc6bde33860cc9fb564c1a575fd';
 export function createCatalog({file,config,onProgress=()=>{},getQuorum=quorum,seedFile}){
  let data={sites:{},lastBlock:null,lastHash:null},running=null,cancelled=false;
  if(seedFile)try{const seed=JSON.parse(readFileSync(seedFile,'utf8'));if(seed.registry===config.registry&&seed.chainId===config.chainId)data={...data,...seed};}catch{}

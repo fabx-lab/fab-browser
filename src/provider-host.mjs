@@ -33,7 +33,7 @@ const addChainParams = (n) => ({
   blockExplorerUrls: n.explorer ? [n.explorer] : [],
 });
 
-export function createProviderHost({ bridge, rpc, rpcs, settings, openBridge, confirm, emit,networkForOrigin=homeNetwork }) {
+export function createProviderHost({ bridge, rpc, rpcs, settings, openBridge, confirm, emit,networkForOrigin=homeNetwork,prepare=(_method,params)=>params }) {
   if (!rpcs) rpcs = { xlayer: rpc };
   let readyWait = null;
   let sessionEpoch=0;
@@ -133,9 +133,13 @@ export function createProviderHost({ bridge, rpc, rpcs, settings, openBridge, co
         if(!from||!bridge.state.accounts.includes(from))throw providerError(4100,'必须使用当前钱包地址签名');
       }
       const check=checkpoint(origin,guard,{permitted:true,chain:true});check();
+      // What is approved is exactly what is signed: one calldata field, and the signer's prepared fee.
+      if(method==='eth_sendTransaction'){const tx=params[0]||{};if(tx.data!==undefined&&tx.input!==undefined&&tx.data!==tx.input)throw providerError(-32602,'data 与 input 不一致');if(tx.data===undefined&&tx.input!==undefined){const {input,...rest}=tx;params=[{...rest,data:input},...params.slice(1)];}}
+      // A signer may check or complete the request first; only a transaction waits on the network.
+      {const prepared=prepare(method,params);params=prepared instanceof Promise?await prepared:prepared;check();}
       const approval=await confirm({kind:'sign',origin,method,params,chainId:bridge.state.chainId,guard:check});check();
       if(!approval.ok)throw providerError(4001,'用户拒绝请求');
-      return bridge.request(method,params,origin);
+      return bridge.request(method,params,origin,check);
     }
     throw providerError(4200,`不支持的方法 ${method}`);
   }

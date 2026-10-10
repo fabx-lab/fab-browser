@@ -1,8 +1,9 @@
 const api=window.fabBrowser,$=id=>document.getElementById(id),content=$('management-content');
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function card(title){const e=element('section',undefined,'management-card');e.append(element('h2',title));content.append(e);return e;}
+function segmented(options,value,label,pick){const group=element('div',undefined,'segmented');group.setAttribute('role','group');group.setAttribute('aria-label',label);for(const [key,text]of options){const b=element('button',text);b.type='button';b.setAttribute('aria-pressed',String(key===value));b.onclick=()=>Promise.resolve(pick(key)).then(()=>{for(const other of group.children)other.setAttribute('aria-pressed',String(other===b));}).catch(error=>{const e=element('p',error.message);e.setAttribute('role','alert');group.after(e);});group.append(b);}return group;}
 function button(parent,text,action){const b=element('button',text);b.onclick=()=>Promise.resolve().then(action).catch(error=>{const e=element('p',error.message);e.setAttribute('role','alert');parent.append(e);});parent.append(b);return b;}
-async function show(title){$('management-title').textContent=title;content.replaceChildren();$('management').hidden=false;await api.management(true);$('management-close').focus();}
+async function show(title){if(document.body.dataset.layout==='over')$('panel-close').click();$('management-title').textContent=title;content.replaceChildren();$('management').hidden=false;await api.management(true);$('management-close').focus();}
 async function close(){$('management').hidden=true;await api.management(false);$('input').focus();}
 $('management-close').onclick=close;
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('management').hidden){event.preventDefault();void close();}});
@@ -12,20 +13,22 @@ async function wallet(){await show('钱包与网站授权');const state=await ap
  const permissions=card('已授权读取地址的网站');if(!state.origins.length)permissions.append(element('p','暂无网站授权'));
  for(const origin of state.origins){const row=element('div',undefined,'permission-row');row.append(element('span',origin));button(row,'撤销',async()=>{await api.walletRevoke(origin);await wallet();});permissions.append(row);}
 }
-async function settings(){await show('设置');const state=await api.settings();const language=card('语言 / Language'),select=element('select');for(const [value,label]of [['auto','跟随系统 / Automatic'],['zh','简体中文'],['en','English']]){const o=element('option',label);o.value=value;select.append(o);}select.value=state.lang;select.setAttribute('aria-label','语言');language.append(select);button(language,'保存语言',async()=>{await api.saveLanguage(select.value);await close();location.reload();});
+async function settings(){await show('设置');const state=await api.settings();const language=card('语言 / Language');language.append(segmented([['auto','跟随系统 / Automatic'],['zh','简体中文'],['en','English']],state.lang,'语言',async value=>{await api.saveLanguage(value);await close();location.reload();}));
+ const look=card('外观');look.append(segmented([['system','跟随系统'],['light','浅色'],['dark','深色']],state.appearance,'外观',value=>api.saveAppearance(value)));look.append(element('p','窗口和网页都跟随这个选择。标签可以放在侧边或顶部，按 Shift+Cmd/Ctrl+S 切换。','management-notice'));
  const rpc=card('X Layer RPC');rpc.append(element('p','至少两个不同主机的 HTTPS RPC，保存前验证链 ID 196。不同主机不代表不同运营方。','management-notice'));const urls=element('textarea');urls.value=state.rpcs.join('\n');urls.rows=3;urls.setAttribute('aria-label','RPC 地址，每行一个');rpc.append(urls);button(rpc,'验证并保存',async()=>{await api.saveRpcs(urls.value.split(/\s+/).filter(Boolean));rpc.append(element('p','已验证并保存，后续读取使用新节点。'));});
  const cache=card('内容缓存'),usage=await api.cacheUsage();cache.append(element('p',`${usage.files} files · ${(usage.bytes/1024/1024).toFixed(2)} MiB`));for(const release of usage.versions||[])button(cache,`${release.title} · v${release.version}`,async()=>{await close();await api.offlineOpen(`${release.container}@${release.version}`);});button(cache,'清空内容缓存',async()=>{await api.clearCache();cache.append(element('p','已清空缓存。'));});
  const local=card('开发者工具');button(local,'预览网站文件夹…',async()=>{await close();await api.localOpen();});button(local,'开发者中心与发布文档',()=>api.developer());
- const about=card(`FAB Browser ${state.version}`);about.append(element('p','基于 TapeBrowser，GPL-3.0-or-later。网站文件保存在 IPFS，链上登记 CID、版本和电路容器。客户端核对链上绑定；尚未独立验证 IPFS DAG。','management-notice'));
+ const about=card(`FAB Browser ${state.version}`);about.append(element('p','基于 TapeBrowser，GPL-3.0-or-later。网站文件保存在 IPFS，链上登记 CID、版本和电路容器。客户端核对链上绑定；尚未独立验证 IPFS DAG。','management-notice'));button(about,'重新查看引导',async()=>{await close();document.dispatchEvent(new CustomEvent('fab:welcome'));});
 }
 async function report(data){await show('发布前检查');if(data.error){card('错误').append(element('p',data.error));return;}
  const pre=card('文件与引用检查');pre.append(element('p',`${data.precheck.summary.files} files · ${data.precheck.summary.bytes} B`));for(const item of data.precheck.items)pre.append(element('p',`${{error:'⛔',warn:'△',info:'·'}[item.level]||'·'} ${item.text}`));
  const safety=card('静态安全检查');renderSafety(safety,data.safety);
  card('检查范围').append(element('p',data.notice));button(content,'前往开发者中心发布',()=>api.developer());button(content,'返回预览',close);
 }
-$('wallet-button').onclick=()=>void wallet();$('settings-button').onclick=()=>void settings();
-$('local-open').onclick=()=>api.localOpen();$('local-inspect').onclick=async()=>report(await api.localInspect());$('local-reveal').onclick=()=>api.localReveal();
-api.onLocalReport(data=>void report(data));api.onShowSettings(()=>void settings());api.onWalletState(state=>{$('wallet-button').dataset.ready=String(!!state?.ready);$('wallet-button').title=state?.ready?`钱包已连接 · ${state.accounts[0]||''}`:'连接钱包';});
+$('settings-button').onclick=()=>void settings();
+document.addEventListener('fab:wallet-details',()=>void wallet());
+$('local-inspect').onclick=async()=>report(await api.localInspect());$('local-reveal').onclick=()=>api.localReveal();
+api.onLocalReport(data=>void report(data));api.onShowSettings(()=>void settings());
 let catalogRows=[],catalogPage=0;
 const categories={game:'游戏',finance:'金融',tool:'工具',social:'社交',infra:'基础设施',other:'其他'};
 async function catalog(refresh=false){await show('FAB 应用目录');const filters=card('发现链上发布的应用');filters.append(element('p','从 FAB 测试 Registry 发布事件读取，双 RPC 在同一区块核对。仅已配置并核验网关的应用可直接打开。','management-notice'));
@@ -43,8 +46,14 @@ async function catalog(refresh=false){await show('FAB 应用目录');const filte
 async function siteInfo(){await show('网站信息');const state=await api.siteInfo(),c=card(state.title);for(const [key,value]of [['网络',`X Layer ${state.chainId}`],['版本',state.version],['CID',state.cid],['容器',state.container],['发布者',state.publisher],['发布清单来源',state.manifestSource]])c.append(element('p',`${key}：${value||'未知'}`));c.append(element('p',state.offline?'当前为历史缓存，链上状态未重新核验。':'链上 CID 与版本已核对，文件 SHA-256 对照网关清单校验；未独立验证 IPFS DAG。','management-notice'));button(c,'检查最新版本与持有人',async()=>{const result=await api.checkSite();c.append(element('p',`当前 v${result.currentVersion} · 最新 v${result.latestVersion}${result.changed?' · 有新版本，请刷新应用':''} · 持有人：${result.owner||'尚未读取'}${result.ownerChanged?'（持有人已变化）':''}`));});button(c,'读取容器 OKB 余额',async()=>{const result=await api.siteBalance(),wei=BigInt(result.wei);c.append(element('p',`${wei/10n**18n}.${(wei%10n**18n).toString().padStart(18,'0').replace(/0+$/,'')||'0'} OKB · block ${result.block}`));});button(c,'复制 HTTPS 访问链接',()=>navigator.clipboard.writeText(state.gateway+'/'));button(c,'复制 FAB 应用链接',()=>navigator.clipboard.writeText(`fab://${state.container}/`));
  const files=card('发布文件');for(const file of state.manifest.files)files.append(element('p',`${file.name} · ${file.size} B · ${file.sha256}`));const external=card('被阻止的外部来源');external.append(element('p',state.external.length?state.external.map(e=>`${e.origin} · ${e.types.join(', ')} · ${e.count}`).join('\n'):'没有发现匹配的风险特征。'));button(content,'运行静态安全检查',async()=>{const result=await api.siteAudit();const report=card('静态检查结果');renderSafety(report,result);});button(content,'返回应用',close);
 }
-$('catalog-open').onclick=()=>void catalog();$('site-info').onclick=()=>siteInfo().catch(error=>card('错误').append(element('p',error.message)));
+$('catalog-open').onclick=()=>void catalog();$('library-open').onclick=()=>void libraryPanel();api.onShowLibrary(()=>void libraryPanel());$('site-info').onclick=()=>siteInfo().catch(error=>card('错误').append(element('p',error.message)));
 $('offline-open').onclick=async()=>{await close();await api.offlineOpen($('input').value);};
 api.onCatalogProgress(value=>{const e=$('catalog-progress');if(e)e.textContent=`${value.stage==='owned'?'扫描持有电路':'扫描发布记录'}：${value.done} / ${value.total}`;});
 
 function renderSafety(parent,value){parent.append(element('p','安全检查不能证明网站安全；以下报告只覆盖静态特征。','management-notice'));for(const row of [...value.abilities,...value.findings]){parent.append(element('p',`${row.level==='danger'?'⛔':row.level==='warn'?'△':'·'} ${row.text}`));if(row.where)parent.append(element('small',Array.isArray(row.where)?row.where.join(', '):String(row.where)));}if(!value.abilities.length&&!value.findings.length)parent.append(element('p','没有发现匹配的风险特征。'));parent.append(element('p',`Scanned ${value.coverage.scanned} / ${value.coverage.files} files`));if(value.coverage.skipped.length)parent.append(element('p',`Not scanned: ${value.coverage.skipped.join(', ')}`));}
+
+async function libraryPanel(){await show('书签与最近访问');const value=await api.library(),changed=()=>document.dispatchEvent(new CustomEvent('fab:library-changed'));
+ for(const [title,rows,bookmarked,empty]of [['书签',value.bookmarks,true,'在应用里按 Cmd/Ctrl+D 添加书签。'],['最近访问',value.history,false,'访问过的应用会显示在这里。']]){const c=card(title);if(!rows.length)c.append(element('p',empty,'empty-library'));
+  for(const row of rows){const entry=element('div',undefined,'library-row'),open=element('button',row.title,'library-item');open.title=row.container;open.onclick=async()=>{await close();$('input').value=row.container;await api.navigate(row.container);};entry.append(open,element('small',row.container,'mono'));button(entry,bookmarked?'移除书签':'移除记录',async()=>{await api[bookmarked?'removeBookmark':'removeHistory'](row.container);changed();await libraryPanel();});c.append(entry);}
+  if(!bookmarked&&rows.length)button(c,'清空访问历史',async()=>{await api.clearHistory();changed();await libraryPanel();});}
+}

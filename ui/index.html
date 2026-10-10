@@ -5,52 +5,139 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'">
 <title>FAB DeWEB Browser</title><link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body data-layout="side">
+<div id="launch" aria-hidden="true"><div class="launch-ground"></div><div id="launch-stage" class="launch-stage"><span class="launch-still">FAB</span></div><span class="launch-caption">DeWEB</span></div>
 <svg class="icon-definitions" aria-hidden="true"><defs>
-<symbol id="i-back" viewBox="0 0 24 24"><path d="m12 5-7 7 7 7M5 12h14"/></symbol>
-<symbol id="i-forward" viewBox="0 0 24 24"><path d="m12 5 7 7-7 7M5 12h14"/></symbol>
-<symbol id="i-reload" viewBox="0 0 24 24"><path d="M19 7a8 8 0 1 0 1 8M19 3v5h-5"/></symbol>
-<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></symbol>
-<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.3-5.7-3-5.7 3 1.1-6.3-4.6-4.5 6.4-.9Z"/></symbol>
-<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16"/></symbol>
-<symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7m0-7L10 14M10 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/></symbol>
-<symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
-<symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="15" rx="3"/><path d="M3 8V5l13-3v3m5 6h-6v5h6"/><path d="M17 13.5h1"/></symbol>
-<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></symbol>
-<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4.5 4.5"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+<symbol id="i-forward" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+<symbol id="i-reload" viewBox="0 0 24 24"><path d="M18.5 8.5A7 7 0 1 0 19 14M19 4.5v4h-4"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="m7 7 10 10M7 17 17 7"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24"><path d="m12 4.5 2.3 4.7 5.2.8-3.8 3.6.9 5.2-4.6-2.4-4.6 2.4.9-5.2-3.8-3.6 5.2-.8Z"/></symbol>
+<symbol id="i-panel" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M9.5 5v14"/></symbol>
+<symbol id="i-strip" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="3"/><path d="M3.5 10h17"/></symbol>
+<symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3.5" y="6" width="17" height="13" rx="3"/><path d="M3.5 10h17M15.5 14.5h1"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4.5 8h15M4.5 16h15"/><circle cx="9" cy="8" r="2.2"/><circle cx="15" cy="16" r="2.2"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="5.5"/><path d="m15 15 4 4"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="5" y="5" width="5.5" height="5.5" rx="1.5"/><rect x="13.5" y="5" width="5.5" height="5.5" rx="1.5"/><rect x="5" y="13.5" width="5.5" height="5.5" rx="1.5"/><rect x="13.5" y="13.5" width="5.5" height="5.5" rx="1.5"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M7 4.5h10v15l-5-3.5-5 3.5Z"/></symbol>
+<symbol id="i-chain" viewBox="0 0 24 24"><path d="M12 4 5.5 6.5v5c0 4 2.8 7 6.5 8.5 3.7-1.5 6.5-4.5 6.5-8.5v-5Z"/><path d="m9.2 12 2 2 3.8-4"/></symbol>
+<symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.5"/><ellipse cx="12" cy="12" rx="3.2" ry="7.5"/><path d="M4.5 12h15"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M4 7.5a2 2 0 0 1 2-2h3.5l2 2H18a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M9 6.8v10.4a.8.8 0 0 0 1.2.7l8-5.2a.8.8 0 0 0 0-1.4l-8-5.2a.8.8 0 0 0-1.2.7Z"/></symbol>
+<symbol id="i-mark" viewBox="0 0 48 24"><mask id="mark-cut"><rect width="48" height="24" rx="12" fill="#fff"/><text x="24" y="16.4" text-anchor="middle" font-size="11.5" font-weight="700" letter-spacing=".6" font-family="-apple-system,BlinkMacSystemFont,system-ui,sans-serif" fill="#000">FAB</text></mask><rect width="48" height="24" rx="12" fill="currentColor" mask="url(#mark-cut)"/></symbol>
 </defs></svg>
-<header class="tab-strip">
-<div class="brand" aria-label="FAB DeWEB"><span class="brand-mark">F</span><span>FAB <b>DeWEB</b></span></div>
-<div id="tabs" class="tab-list" role="tablist" aria-label="应用标签页"></div>
-<button id="new-tab" class="icon-button new-tab" aria-label="新建标签页" title="新建标签页（Cmd/Ctrl+T）">＋</button>
-<span class="environment">测试版</span>
-<button id="developer" class="text-button" title="在默认浏览器打开开发者中心">开发者中心<svg class="icon"><use href="#i-external"/></svg></button>
-</header>
-<form id="address" class="toolbar">
-<div class="navigation">
-<button type="button" id="back" class="icon-button" aria-label="后退" title="后退"><svg class="icon"><use href="#i-back"/></svg></button>
-<button type="button" id="forward" class="icon-button" aria-label="前进" title="前进"><svg class="icon"><use href="#i-forward"/></svg></button>
-<button type="button" id="reload" class="icon-button" aria-label="刷新最新版本" title="重新读取链上版本"><svg class="icon"><use href="#i-reload"/></svg></button>
-<button type="button" id="stop" class="icon-button" aria-label="停止加载" title="停止加载" hidden>×</button>
-</div>
-<div class="address-field"><svg class="icon address-icon" aria-hidden="true"><use href="#i-globe"/></svg><input id="input" aria-label="应用地址" placeholder="搜索已配置应用或输入容器地址" spellcheck="false" autocomplete="off"><button type="button" id="bookmark" class="icon-button" aria-label="添加书签" title="添加书签" aria-pressed="false" disabled><svg class="icon"><use href="#i-star"/></svg></button></div>
-<button class="open-button" title="打开应用">打开</button>
-<button type="button" id="find-button" class="icon-button" aria-label="页内查找" title="页内查找（Cmd/Ctrl+F）"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></button>
-<button type="button" id="zoom-reset" class="text-button" aria-label="恢复实际大小" hidden>100%</button>
-<button type="button" id="wallet-button" class="icon-button" aria-label="钱包" title="钱包连接与网站授权"><svg class="icon"><use href="#i-wallet"/></svg></button><button type="button" id="settings-button" class="icon-button" aria-label="设置" title="设置"><svg class="icon"><use href="#i-settings"/></svg></button>
-<button type="button" id="panel-toggle" class="icon-button" aria-label="打开应用侧栏" aria-controls="sidebar" aria-expanded="false" title="应用、书签和网站信息"><svg class="icon"><use href="#i-panel"/></svg></button>
-</form>
-<form id="find-bar" class="find-bar" hidden aria-label="页内查找"><input id="find-input" aria-label="查找内容" placeholder="在页面中查找" maxlength="500"><span id="find-result" role="status">0 / 0</span><button type="button" id="find-prev" aria-label="上一个匹配">↑</button><button type="button" id="find-next" aria-label="下一个匹配">↓</button><button type="button" id="find-close" aria-label="关闭查找">×</button></form>
-<aside id="sidebar" hidden aria-label="应用侧栏">
-<div class="sidebar-heading"><h1>应用空间</h1><button id="panel-close" class="icon-button" aria-label="关闭侧栏"><svg class="icon"><use href="#i-close"/></svg></button></div>
-<h2>应用</h2><button id="catalog-open" class="text-button">浏览应用目录</button><button id="local-open" class="text-button">预览本地网站文件夹…</button><button id="local-inspect" class="text-button" hidden>发布前检查</button><button id="local-reveal" class="text-button" hidden>在文件管理器打开</button><button id="demo" class="app-item"><span class="game-icon" aria-hidden="true">弈</span><span><strong>五子棋</strong><small>本地双人 · 人机对弈</small></span><span class="item-arrow" aria-hidden="true">›</span></button>
-<h2>书签与最近访问</h2><button id="clear-history" class="text-button">清空访问历史</button><div id="library-list"></div>
-<h2>当前网站</h2><button id="site-info" class="text-button" hidden>版本、文件与安全检查</button><button id="offline-open" class="text-button" hidden>打开上次核验的缓存版本</button><div id="identity">打开应用后查看链上绑定信息。</div>
-<dl id="metadata" hidden><dt>网络</dt><dd id="meta-chain"></dd><dt>发布版本</dt><dd id="meta-version"></dd><dt>IPFS CID</dt><dd id="meta-cid" class="mono"></dd><dt>电路容器</dt><dd id="meta-container" class="mono"></dd></dl>
-<p class="verification-note">核对链上 CID 与版本，网站通过平台 HTTPS 网关读取。客户端尚未独立验证 IPFS DAG。</p>
+
+<aside id="side" class="side" aria-label="标签页与导航">
+ <div class="side-nav">
+  <span class="lights" aria-hidden="true"></span>
+  <button type="button" id="panel-toggle" class="icon-button" aria-controls="side" aria-expanded="true" aria-label="标签移到顶部" title="标签移到顶部（Shift+Cmd/Ctrl+S）"><svg class="icon"><use href="#i-panel"/></svg></button>
+  <button type="button" id="panel-close" class="icon-button" aria-label="关闭侧栏" title="关闭侧栏"><svg class="icon"><use href="#i-close"/></svg></button>
+  <span class="nav-gap"></span>
+  <button type="button" id="back" class="icon-button" aria-label="后退" title="后退（Cmd/Ctrl+[）"><svg class="icon"><use href="#i-back"/></svg></button>
+  <button type="button" id="forward" class="icon-button" aria-label="前进" title="前进（Cmd/Ctrl+]）"><svg class="icon"><use href="#i-forward"/></svg></button>
+  <button type="button" id="reload" class="icon-button" aria-label="刷新最新版本" title="重新读取链上版本（Cmd/Ctrl+R）"><svg class="icon"><use href="#i-reload"/></svg></button>
+  <button type="button" id="stop" class="icon-button" aria-label="停止加载" title="停止加载" hidden><svg class="icon"><use href="#i-close"/></svg></button>
+ </div>
+ <form id="address" class="address" role="search">
+  <button type="button" id="site-info" class="site-badge" aria-label="网站信息" title="版本、文件与安全检查" disabled><svg class="icon"><use href="#i-globe"/></svg></button>
+  <input id="input" aria-label="应用地址" placeholder="应用名称、容器地址或网址" spellcheck="false" autocomplete="off">
+  <button type="button" id="bookmark" class="icon-button" aria-label="添加书签" title="添加书签（Cmd/Ctrl+D）" aria-pressed="false" disabled><svg class="icon"><use href="#i-star"/></svg></button>
+ </form>
+ <div id="pins" class="pins" aria-label="已固定"></div>
+ <div class="tab-column">
+  <div id="tabs" class="tab-list" role="tablist" aria-label="标签页" aria-orientation="vertical"></div>
+  <button type="button" id="new-tab" class="new-tab" aria-label="新建标签页" title="新建标签页（Cmd/Ctrl+T）"><svg class="icon"><use href="#i-plus"/></svg><span>新标签页</span></button>
+ </div>
+ <div class="side-status">
+  <div class="status-line"><span id="status-dot" aria-hidden="true"></span><span id="status" role="status">选择应用，无需钱包即可访问。</span></div>
+  <dl id="metadata" hidden><dt>版本</dt><dd id="meta-version"></dd><dt>CID</dt><dd id="meta-cid" class="mono"></dd><dt>容器</dt><dd id="meta-container" class="mono"></dd><dt>网络</dt><dd id="meta-chain"></dd></dl>
+  <div class="status-actions"><button type="button" id="zoom-reset" class="pill" aria-label="恢复实际大小" hidden>100%</button><button type="button" id="local-inspect" class="pill" hidden>发布前检查</button><button type="button" id="local-reveal" class="pill" hidden>在文件管理器打开</button><button type="button" id="offline-open" class="pill" hidden>打开上次核验的缓存版本</button></div>
+  <span id="release-label" hidden>FAB 测试环境</span>
+ </div>
+ <button type="button" id="wallet-button" class="wallet-chip" aria-haspopup="dialog" aria-expanded="false" aria-controls="wallet-panel" title="钱包连接与网站授权"><svg class="icon"><use href="#i-wallet"/></svg><span id="wallet-label">连接钱包</span></button>
+ <div class="side-tools">
+  <button type="button" id="catalog-open" class="icon-button" aria-label="浏览应用目录" title="应用目录"><svg class="icon"><use href="#i-grid"/></svg></button>
+  <button type="button" id="library-open" class="icon-button" aria-label="书签与最近访问" title="书签与最近访问（Shift+Cmd/Ctrl+B）"><svg class="icon"><use href="#i-book"/></svg></button>
+  <button type="button" id="find-button" class="icon-button" aria-label="页内查找" title="页内查找（Cmd/Ctrl+F）"><svg class="icon"><use href="#i-search"/></svg></button>
+  <span class="tools-gap"></span>
+  <span class="environment">测试版</span>
+  <button type="button" id="settings-button" class="icon-button" aria-label="设置" title="设置（Cmd/Ctrl+,）"><svg class="icon"><use href="#i-settings"/></svg></button>
+ </div>
 </aside>
-<main id="start-page"><div class="start-content"><span class="start-logo" aria-hidden="true">F</span><h1>打开应用，开始探索。</h1><p>你的 FAB 应用，一个简单的入口。</p><button id="start-demo" class="start-app"><span class="game-icon" aria-hidden="true">弈</span><span><strong>五子棋</strong><small>无需钱包，即刻对弈</small></span><span aria-hidden="true">↗</span></button><span class="start-note">文件存储于 IPFS · 发布权限随电路 NFT 转移</span></div></main>
-<section id="management" hidden aria-label="浏览器管理"><div class="management-heading"><h1 id="management-title"></h1><button id="management-close" class="icon-button" aria-label="关闭管理面板">×</button></div><div id="management-content"></div></section>
-<footer class="status-bar"><span id="status-dot" aria-hidden="true"></span><span id="status" role="status">选择应用，无需钱包即可访问。</span><span id="release-label">FAB 测试环境</span></footer>
-<script type="module" src="app.js"></script><script type="module" src="management.js"></script><script type="module" src="localize.js"></script>
+
+<form id="find-bar" class="find-bar" hidden aria-label="页内查找"><input id="find-input" aria-label="查找内容" placeholder="在页面中查找" maxlength="500"><span id="find-result" role="status">0 / 0</span><button type="button" id="find-prev" class="icon-button" aria-label="上一个匹配"><svg class="icon"><use href="#i-back"/></svg></button><button type="button" id="find-next" class="icon-button" aria-label="下一个匹配"><svg class="icon"><use href="#i-forward"/></svg></button><button type="button" id="find-close" class="icon-button" aria-label="关闭查找"><svg class="icon"><use href="#i-close"/></svg></button></form>
+
+<main id="start-page" class="stage">
+ <div class="start-content">
+  <header class="store-head">
+   <div><p id="store-date" class="store-date"></p><h1>Web3 的入口</h1></div>
+   <span class="store-net"><i aria-hidden="true"></i>X Layer 196 主网</span>
+  </header>
+  <p id="start-state" class="start-state" hidden></p>
+
+  <section id="rail" class="rail" aria-roledescription="carousel" aria-label="精选游戏">
+   <div id="rail-stage" class="rail-stage">
+   <button type="button" id="start-demo" class="disc-case gomoku" data-container="0x44725474373c73411D4261EFde83E4C1AD8186D4" aria-label="五子棋">
+    <span class="disc" aria-hidden="true"><span class="disc-body"><span class="disc-spin"><img class="disc-label" src="apps/gomoku.png" alt="" draggable="false"></span><span class="disc-shine"></span></span></span>
+    <span class="case-cover" aria-hidden="true"><span class="case-art"><svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+      <defs>
+       <radialGradient id="g-black" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#6b6b6b"/><stop offset=".45" stop-color="#1f1f1f"/><stop offset="1" stop-color="#050505"/></radialGradient>
+       <radialGradient id="g-white" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#ececec"/><stop offset="1" stop-color="#c9c9c9"/></radialGradient>
+       <pattern id="g-grid" width="16" height="16" patternUnits="userSpaceOnUse" x="96" y="26"><path d="M16 0H0V16" fill="none" stroke="currentColor" stroke-width=".8"/></pattern>
+      </defs>
+      <rect class="board-wood" width="320" height="180"/>
+      <g class="board-lines"><rect x="96" y="26" width="128" height="128" fill="url(#g-grid)"/><rect x="96" y="26" width="128" height="128" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="160" cy="90" r="2.2" fill="currentColor"/><circle cx="128" cy="58" r="1.8" fill="currentColor"/><circle cx="192" cy="58" r="1.8" fill="currentColor"/><circle cx="128" cy="122" r="1.8" fill="currentColor"/><circle cx="192" cy="122" r="1.8" fill="currentColor"/></g>
+      <g class="stones"><circle cx="176" cy="74" r="6.6" fill="url(#g-white)"/><circle cx="144" cy="106" r="6.6" fill="url(#g-white)"/><circle cx="192" cy="90" r="6.6" fill="url(#g-white)"/><circle cx="160" cy="58" r="6.6" fill="url(#g-white)"/><circle cx="128" cy="90" r="6.6" fill="url(#g-white)"/><circle cx="208" cy="58" r="6.6" fill="url(#g-black)"/><circle cx="128" cy="122" r="6.6" fill="url(#g-black)"/></g>
+      <g class="stones win"><circle cx="112" cy="42" r="6.6" fill="url(#g-black)"/><circle cx="128" cy="58" r="6.6" fill="url(#g-black)"/><circle cx="144" cy="74" r="6.6" fill="url(#g-black)"/><circle cx="160" cy="90" r="6.6" fill="url(#g-black)"/><circle cx="176" cy="106" r="6.6" fill="url(#g-black)"/></g>
+      <path class="win-line" pathLength="1" d="M112 42 L176 106" fill="none" stroke-width="2" stroke-linecap="round"/>
+     </svg></span><span class="case-shade"></span><span class="case-copy"><em>精选 · 棋类</em><strong>来下一盘。</strong></span></span>
+    <span class="case-text" hidden><b data-field="name">五子棋</b><small data-field="summary">人机对弈或双人同屏</small></span>
+   </button>
+   <button type="button" id="start-poker" class="disc-case poker" data-container="0xD9F72ba8176Ca64cFda991F39ae1Ed035c4CC8Ce" aria-label="德州扑克">
+    <span class="disc" aria-hidden="true"><span class="disc-body"><span class="disc-spin"><img class="disc-label" src="apps/poker.png" alt="" draggable="false"></span><span class="disc-shine"></span></span></span>
+    <span class="case-cover" aria-hidden="true"><span class="case-art"><svg viewBox="0 0 320 180" preserveAspectRatio="xMidYMid slice">
+      <defs>
+       <radialGradient id="p-felt" cx="50%" cy="38%" r="75%"><stop offset="0" class="felt-0"/><stop offset=".65" class="felt-1"/><stop offset="1" class="felt-2"/></radialGradient>
+       <linearGradient id="p-card" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#eef0ee"/></linearGradient>
+      </defs>
+      <rect width="320" height="180" fill="url(#p-felt)"/>
+      <ellipse cx="160" cy="98" rx="148" ry="70" fill="none" class="felt-ring"/>
+      <g class="chips">
+       <g transform="translate(70 120)"><ellipse cx="0" cy="8" rx="17" ry="6" class="chip-shade"/><ellipse cx="0" cy="4" rx="17" ry="6" class="chip-a"/><ellipse cx="0" cy="0" rx="17" ry="6" class="chip-a"/><ellipse cx="0" cy="0" rx="11" ry="3.8" fill="none" class="chip-edge"/></g>
+       <g transform="translate(250 126)"><ellipse cx="0" cy="8" rx="17" ry="6" class="chip-shade"/><ellipse cx="0" cy="4" rx="17" ry="6" class="chip-b"/><ellipse cx="0" cy="0" rx="17" ry="6" class="chip-b"/><ellipse cx="0" cy="0" rx="11" ry="3.8" fill="none" class="chip-edge"/></g>
+       <g transform="translate(232 140)"><ellipse cx="0" cy="4" rx="15" ry="5.4" class="chip-shade"/><ellipse cx="0" cy="0" rx="15" ry="5.4" class="chip-c"/><ellipse cx="0" cy="0" rx="9.5" ry="3.2" fill="none" class="chip-edge"/></g>
+      </g>
+      <g class="cards">
+       <g transform="translate(132 96) rotate(-13)"><g class="card card-1"><rect x="-30" y="-44" width="60" height="86" rx="7" fill="url(#p-card)" class="card-face"/><text x="-22" y="-26" class="pip black">A</text><text x="0" y="12" text-anchor="middle" class="suit black">♠</text></g></g>
+       <g transform="translate(186 92) rotate(9)"><g class="card card-2"><rect x="-30" y="-44" width="60" height="86" rx="7" fill="url(#p-card)" class="card-face"/><text x="-22" y="-26" class="pip red">K</text><text x="0" y="12" text-anchor="middle" class="suit red">♥</text></g></g>
+      </g>
+     </svg></span><span class="case-shade"></span><span class="case-copy"><em>精选 · 牌类</em><strong>全押，还是弃牌？</strong></span></span>
+    <span class="case-text" hidden><b data-field="name">德州扑克</b><small data-field="summary">单机对战电脑对手</small></span>
+   </button>
+   </div>
+   <div id="rail-caption" class="rail-caption" aria-hidden="true"><b id="rail-title"></b><small id="rail-summary"></small></div>
+   <div class="rail-deck">
+    <button type="button" id="rail-prev" class="icon-button" aria-label="上一个"><svg class="icon"><use href="#i-back"/></svg></button>
+    <div class="rail-ruler-frame"><div id="rail-ruler" class="rail-ruler" aria-hidden="true"></div><button type="button" id="rail-play" class="rail-play" aria-label="打开"><svg class="icon"><use href="#i-play"/></svg></button></div>
+    <button type="button" id="rail-next" class="icon-button" aria-label="下一个"><svg class="icon"><use href="#i-forward"/></svg></button>
+   </div>
+  </section>
+
+  <section class="store" aria-labelledby="store-title">
+   <div class="store-label"><h2 id="store-title">全部应用</h2><button type="button" id="start-catalog" class="text-button">应用目录</button></div>
+   <div id="store-list" class="store-list" role="list"></div>
+  </section>
+
+  <p class="start-note">每个应用打开前，FAB 都会在链上核对它的版本。</p>
+ </div>
+</main>
+
+<section id="management" class="stage" hidden aria-label="浏览器管理"><div class="management-column"><div class="management-heading"><h1 id="management-title"></h1><button type="button" id="management-close" class="icon-button" aria-label="关闭管理面板"><svg class="icon"><use href="#i-close"/></svg></button></div><div id="management-content"></div></div></section>
+
+<section id="wallet-panel" class="wallet-panel" role="dialog" aria-label="钱包" hidden></section>
+
+<section id="welcome" hidden aria-label="欢迎使用 FAB DeWEB" aria-live="polite"><div id="welcome-page" class="welcome-page"></div><div class="welcome-foot"><div id="welcome-dots" class="welcome-dots" aria-hidden="true"></div><span class="tools-gap"></span><button type="button" id="welcome-back" class="text-button">返回</button><button type="button" id="welcome-skip" class="text-button">跳过</button><button type="button" id="welcome-next" class="button primary">继续</button></div></section>
+
+<script type="module" src="launch.js"></script><script type="module" src="app.js"></script><script type="module" src="management.js"></script><script type="module" src="welcome.js"></script><script type="module" src="wallet-panel.js"></script><script type="module" src="store.js"></script><script type="module" src="localize.js"></script>
 </body></html>
