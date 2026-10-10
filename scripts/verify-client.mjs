@@ -7,7 +7,7 @@ import {spawn} from 'node:child_process';
 const platform=process.platform, arch=process.arch;
 const release=path.resolve('release');
 const files=await fs.readdir(release);
-const suffix=platform==='darwin'?`mac-${arch}.dmg`:platform==='win32'?'win-x64-setup.exe':'linux-x64.AppImage';
+const suffix=platform==='darwin'?`mac-${arch}.dmg`:platform==='win32'?'win-x64-setup.exe':'linux-x86_64.AppImage';
 const asset=path.join(release,files.find(f=>f.endsWith(suffix))??'missing-client');
 await fs.access(asset);
 const temp=await fs.mkdtemp(path.join(os.tmpdir(),'fab-client-'));

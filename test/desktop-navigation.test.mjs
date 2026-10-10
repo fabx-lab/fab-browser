@@ -23,7 +23,7 @@ function fixture({failFirst=false}={}) {
     window:{contentView:{addChildView(){},removeChildView(){}}},bounds(){},smoke:true,
     state:data=>states.push({...data}),library:{visit(){}},register:(name,fn)=>{actions[name]=fn;}
   };
-  const api=runInNewContext(`let site,current,lastTarget,requestId=0;${navigation}\n${reload}\n({navigate});`,context);
+  const api=runInNewContext(`let site,current,lastTarget,requestId=0,siteReady=false;${navigation}\n${reload}\n({navigate});`,context);
   return {...api,states,views,actions,get reads(){return reads;}};
 }
 test('late failure from a closed page cannot overwrite a newer application status',async()=>{

@@ -1,5 +1,6 @@
 const {contextBridge, ipcRenderer} = require('electron');
 contextBridge.exposeInMainWorld('fabBrowser', {
+  sidebar: open => ipcRenderer.invoke('sidebar', Boolean(open)),
   initial: () => ipcRenderer.invoke('initial'),
   library: () => ipcRenderer.invoke('library'), bookmark: () => ipcRenderer.invoke('bookmark'),
   navigate: value => ipcRenderer.invoke('navigate', String(value)),

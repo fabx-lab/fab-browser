@@ -36,6 +36,8 @@ jobs:
         run: pnpm exec electron-builder --${{ matrix.platform }} --${{ matrix.arch }} --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Record live gateway diagnostics
+        run: node scripts/probe-gateway.mjs
       - name: Verify downloaded package (macOS and Windows)
         if: runner.os != 'Linux'
         run: pnpm verify:client
@@ -47,7 +49,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: evidence-${{ matrix.platform }}-${{ matrix.arch }}
-          path: artifacts/client-*/
+          path: |
+            artifacts/client-*/
+            artifacts/gateway-probe/
           if-no-files-found: ignore
       - name: Upload verified installer
         uses: actions/upload-artifact@v4
