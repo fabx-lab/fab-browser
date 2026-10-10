@@ -44,6 +44,6 @@ pnpm start
 
 ## 客户端发布
 
-目标：macOS Apple Silicon／Intel DMG、Windows x64 NSIS、Linux x64 AppImage。GitHub Actions **Build and verify clients** 在四个原生 runner 构建，安装或解包后启动实际客户端执行 smoke；任一验证失败不会上传该平台安装包。测试依赖真实 FAB 测试 Registry、两家公共 RPC 和网关，失败记录保留在 Actions artifacts。
+目标：macOS Apple Silicon（M 系列）DMG、Windows x64 NSIS、Linux x64 AppImage。GitHub Actions **Build and verify clients** 在三个原生 runner 构建，安装或解包后启动实际客户端执行 smoke；任一验证失败不会上传该平台安装包。测试依赖真实 FAB 测试 Registry、两家公共 RPC 和网关，失败记录保留在 Actions artifacts。
 
-四个平台通过后发布公开 GitHub **prerelease**，附匹配源码 ZIP、客户端、SHA256SUMS 和验收证据。没有自动更新器，请从 [GitHub Releases](https://github.com/cybercity001/fab-browser/releases) 下载。macOS 使用 ad-hoc 签名，未公证；Windows 未 Authenticode 签名。原生 CI 启动验证不等于已覆盖所有用户设备、真实钱包扩展和系统安全提示。
+三个平台通过后发布公开 GitHub **prerelease**，附匹配源码 ZIP、客户端、SHA256SUMS 和验收证据。不提供 Intel Mac 客户端。没有自动更新器，请从 [GitHub Releases](https://github.com/cybercity001/fab-browser/releases) 下载。macOS 使用 ad-hoc 签名，未公证；Windows 未 Authenticode 签名。原生 CI 启动验证不等于已覆盖所有用户设备、真实钱包扩展和系统安全提示。

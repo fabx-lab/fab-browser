@@ -14,7 +14,7 @@
     "test": "node --test test/*.test.mjs",
     "build": "node scripts/build.mjs",
     "smoke": "electron . --fab-smoke",
-    "dist:mac": "electron-builder --mac --arm64 --x64 --publish never",
+    "dist:mac": "electron-builder --mac --arm64 --publish never",
     "dist:win": "electron-builder --win --x64 --publish never",
     "dist:linux": "electron-builder --linux --x64 --publish never",
     "verify:client": "node scripts/verify-client.mjs"
