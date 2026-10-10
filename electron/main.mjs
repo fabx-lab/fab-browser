@@ -1,5 +1,5 @@
 import {app,BaseWindow,WebContentsView,ipcMain,session,shell,Menu,clipboard,dialog,protocol} from 'electron';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {installDeepLinks} from './deep-links.mjs';
 import {createApplicationTabs} from './application-tabs.mjs';
@@ -69,7 +69,9 @@ if(deepLinks.owned)app.whenReady().then(async()=>{
  wallet=await createWalletService({settings,staticDir:path.join(here,'../bridge'),rpc:createRpc(()=>runtimeConfig.rpcs),dialog:uiDialog,window,shell,tabs,audit,apps:runtimeConfig.apps,language:()=>pickLanguage(settings.get('lang'),app.getLocale()),onState:()=>send('walletState',wallet?.status())});
  ipcMain.handle('eth:initial',event=>wallet.initial(event));ipcMain.handle('eth:request',(event,method,params)=>wallet.request(event,method,params));
  tabs.open();bounds();shortcuts(chrome.webContents);
- chrome.webContents.setWindowOpenHandler(()=>({action:'deny'}));chrome.webContents.on('will-navigate',(event,url)=>{if(url!==pathToFileURL(path.join(here,'../ui/index.html')).href)event.preventDefault();});
+ // Use Chromium's loaded URL, including its platform-specific file URL spelling.
+ let shellURL;
+ chrome.webContents.setWindowOpenHandler(()=>({action:'deny'}));chrome.webContents.on('will-navigate',(event,url)=>{if(!shellURL||url!==shellURL)event.preventDefault();});
  window.on('resize',bounds);window.on('closed',()=>{disposing=true;catalog.cancel();localPreview.stop();tabs.dispose();library.flush();store.flush();void wallet.stop().finally(()=>{if(!chrome.webContents.isDestroyed())chrome.webContents.close();app.quit();});});
  register('management',open=>{if(typeof open!=='boolean')throw new Error('Invalid panel state');managementOpen=open;bounds();});
  register('saveLanguage',lang=>{if(!['auto','zh','en'].includes(lang))throw new Error('Invalid language');settings.set('lang',lang);updateMenu();});
@@ -100,6 +102,7 @@ if(deepLinks.owned)app.whenReady().then(async()=>{
  const updateMenu=()=>installBrowserMenu({Menu,app,window,tabs,focusAddress:()=>{chrome.webContents.focus();send('focusAddress');},showFind:(again=false,forward=true)=>{chrome.webContents.focus();send('showFind',{again,forward});},showLibrary:()=>send('showLibrary'),bookmark:()=>{bookmark();send('libraryChanged');},developer,tr:createTranslator(pickLanguage(settings.get('lang'),app.getLocale())),openFolder:()=>localPreview.open(),showSettings:()=>send('showSettings')});updateMenu();
  deepLinks.ready();
  await chrome.webContents.loadFile(path.join(here,'../ui/index.html'));
+ shellURL=chrome.webContents.getURL();
  if(smoke)await runSmoke({app,window,chrome,getSite:tabs.site,getState:tabs.state,output:smokeDir,controls:smokeControls,walletBridgeURL:()=>`http://127.0.0.1:${settings.get('bridgePort')}/?t=${settings.get('bridgeToken')}`} );
 }).catch(error=>{console.error(error);app.exit(1);});
 app.on('window-all-closed',()=>{if(!disposing)app.quit();});

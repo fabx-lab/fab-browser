@@ -133,6 +133,11 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   window.setContentSize(390,844);await new Promise(resolve=>setTimeout(resolve,100));
   assert.equal(await chrome.webContents.executeJavaScript('document.documentElement.scrollWidth>innerWidth'),false);
   await shot('catalog-390.png',chrome.webContents);window.setContentSize(1280,900);
+  const shellURL=chrome.webContents.getURL();
+  await chrome.webContents.executeJavaScript("location.href='https://example.com/'");
+  await new Promise(resolve=>setTimeout(resolve,100));
+  assert.equal(chrome.webContents.getURL(),shellURL,'Shell must reject external navigation');
+  report.settings.externalNavigationBlocked=true;
   await chrome.webContents.executeJavaScript("window.fabBrowser.saveLanguage('zh').then(()=>location.reload())");
   await wait(()=>chrome.webContents.executeJavaScript("document.body.dataset.uiReady==='true'&&document.querySelector('#settings-button').getAttribute('aria-label')==='设置'"));
   assert.equal(getSite().getVisible(),true,'Language reload restores active application view');
