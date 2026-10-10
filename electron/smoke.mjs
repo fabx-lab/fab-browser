@@ -14,8 +14,14 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
  try{
   await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while(document.body.dataset.uiReady!=='true'&&Date.now()<end)await new Promise(r=>setTimeout(r,50));if(document.body.dataset.uiReady!=='true')throw Error('Shell initialization timeout');document.querySelector('#start-demo').click();})()`);
   await chrome.webContents.executeJavaScript(`(async()=>{const end=Date.now()+60000;while(!['ready','error'].includes(document.body.dataset.state)&&Date.now()<end)await new Promise(r=>setTimeout(r,100));})()`);
+  report.latest=getState();
+  assert.equal(report.latest?.status,'ready',report.latest?.message||'Latest application did not become ready');
+  // The NFT holder may publish a different application while tests run.
+  // Pin the historical Gomoku release; never require the live latest to stay a game.
+  await chrome.webContents.executeJavaScript(`window.fabBrowser.navigate(${JSON.stringify(report.latest.gateway+'/v/2/index.html')})`);
   report.state=getState();
-  assert.equal(report.state?.status,'ready',report.state?.message||'Application did not become ready');
+  assert.equal(report.state?.status,'ready',report.state?.message||'Historical game did not become ready');
+  assert.equal(report.state.version,'2');
   report.balance=await chrome.webContents.executeJavaScript('window.fabBrowser.siteBalance()');assert.ok(BigInt(report.balance.wei)>=0n);
   const site=getSite();
   report.page=await site.webContents.executeJavaScript(`(async()=>{const end=Date.now()+10000;while(document.querySelectorAll('.cell').length!==225&&Date.now()<end)await new Promise(r=>setTimeout(r,100));return {title:document.title,url:location.href,cells:document.querySelectorAll('.cell').length,node:typeof require,bridge:typeof window.fabBrowser,ethereum:typeof window.ethereum};})()`);
@@ -108,7 +114,7 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   await chrome.webContents.executeJavaScript("document.querySelector('#management-close').click()");
   report.preview={rendered:true,nodeUnavailable:true,secretBlocked:true,hotReload:true};
   // Cached historical release requires a deliberate action and a visible label.
-  await chrome.webContents.executeJavaScript(`window.fabBrowser.offlineOpen(${JSON.stringify(report.state.container)})`);
+  await chrome.webContents.executeJavaScript(`window.fabBrowser.offlineOpen(${JSON.stringify(report.state.container+'@2')})`);
   await wait(()=>getState()?.status==='ready'&&getState()?.offline===true);
   assert.equal(await getSite().webContents.executeJavaScript("document.querySelectorAll('.cell').length"),225);
   report.cache={explicitOffline:true,boardCells:225,usage:await chrome.webContents.executeJavaScript('window.fabBrowser.cacheUsage()')};
@@ -119,7 +125,8 @@ export async function runSmoke({app,window,chrome,getSite,getState,output,contro
   await chrome.webContents.executeJavaScript("document.querySelector('#management-close').click()");
   report.settings={opened:true};
   const catalogRows=await chrome.webContents.executeJavaScript('window.fabBrowser.catalogRefresh()');
-  assert.ok(catalogRows.some(row=>row.container.toLowerCase()===report.state.container.toLowerCase()&&row.category==='game'),'Directory must load and categorize chain-published game');
+  report.catalog={source:'liveRegistry',apps:catalogRows.length,rows:catalogRows};
+  assert.ok(catalogRows.some(row=>row.container.toLowerCase()===report.state.container.toLowerCase()&&typeof row.category==='string'),'Directory must load metadata for the current published application: '+JSON.stringify(catalogRows));
   await chrome.webContents.executeJavaScript("document.querySelector('#catalog-open').click()");
   await wait(()=>chrome.webContents.executeJavaScript("document.querySelectorAll('.catalog-card').length>0"));
   await shot('catalog.png',chrome.webContents);report.catalog={source:'liveRegistry',apps:catalogRows.length,persistedMetadata:true};

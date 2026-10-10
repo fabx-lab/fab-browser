@@ -12,7 +12,7 @@ import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { EventEmitter } from 'node:events';
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, randomUUID } from 'node:crypto';
 import { WebSocketServer } from 'ws';
 
 const STATIC = { '/locale.mjs':'text/javascript; charset=utf-8', '/i18n.mjs':'text/javascript; charset=utf-8', '/i18n/en.mjs':'text/javascript; charset=utf-8', '/bridge.js': 'text/javascript; charset=utf-8', '/bridge.css': 'text/css; charset=utf-8' };
@@ -31,6 +31,7 @@ export function createBridgeServer({ token, port = 0, staticDir }) {
   let socket = null;
   let actualPort = 0;
   let seq = 0;
+  const requestSession=randomUUID();
   const pending = new Map();
   const waiters=new Set();
   function cancelWaiters(){for(const cancel of [...waiters])cancel();}
@@ -130,7 +131,7 @@ export function createBridgeServer({ token, port = 0, staticDir }) {
   /** 把请求交给桥接页面里的钱包；返回 result，失败 reject {code, message, data} */
   function request(method, params, origin) {
     if (!socket || !state.ready) return Promise.reject({ code: 4900, message: '钱包未连接' });
-    const id = ++seq;
+    const id = `${requestSession}:${++seq}`;
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => { pending.delete(id); reject({ code: 4001, message: '钱包请求超时' }); }, REQUEST_TIMEOUT);
       pending.set(id, { resolve, reject, timer });

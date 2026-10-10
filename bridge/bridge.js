@@ -149,21 +149,27 @@
   }
 
   async function onRequest(msg) {
+    const requestSocket=ws;
+    const active=()=>requestSocket===ws&&requestSocket.readyState===WebSocket.OPEN;
+    const reply=value=>{if(active())requestSocket.send(JSON.stringify(value));};
+    if(!active())return;
     const who = msg.origin ? msg.origin + ' ' : '';
     log(who + '请求 ' + msg.method);
-    if (!current||selecting) { send({ type: 'response', id: msg.id, error: { code: 4900, message: '桥接页面没有选择钱包' } }); return; }
+    if (!current||selecting) { reply({ type: 'response', id: msg.id, error: { code: 4900, message: '桥接页面没有选择钱包' } }); return; }
     const generation=epoch,selected=current;
     try {
       const result = await selected.provider.request({ method: msg.method, params: msg.params });
+      if(!active())return;
       if(generation!==epoch)throw {code:4900,message:'钱包已更换或断开'};
       if (msg.method === 'eth_requestAccounts') { accounts = result || []; report(); }
       // 有的钱包切链成功后不发 chainChanged（或者很晚才发），自己再读一次当前的链，免得 FAB Browser 一直以为链不对
       if (msg.method === 'wallet_switchEthereumChain' || msg.method === 'wallet_addEthereumChain') await refreshChain();
+      if(!active())return;
       if(generation!==epoch)throw {code:4900,message:'钱包已更换或断开'};
-      send({ type: 'response', id: msg.id, result: result === undefined ? null : result });
+      reply({ type: 'response', id: msg.id, result: result === undefined ? null : result });
     } catch (e) {
       log(who + msg.method + ' 失败：' + safeError(e).message);
-      send({ type: 'response', id: msg.id, error: safeError(e) });
+      reply({ type: 'response', id: msg.id, error: safeError(e) });
     }
   }
 
