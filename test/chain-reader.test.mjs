@@ -55,7 +55,7 @@ function fixture({ lag = false, disagreement = "", once = false } = {}) {
 }
 test("lagging RPCs read a shared height instead of querying a future block", async () => {
   const f = fixture({ lag: true });
-  assert.deepEqual(await f.reader(null), { cid, version: 2n });
+  assert.deepEqual(await f.reader(null), {cid,version:2n,publisher:'0x'+'1'.repeat(40),publishedAt:'1'});
   const blocks = f.calls.filter((c) => c.method === "eth_getBlockByNumber");
   assert.deepEqual(
     blocks.map((c) => c.params[0]),
@@ -70,7 +70,7 @@ test("lagging RPCs read a shared height instead of querying a future block", asy
 test("a temporarily missing block is recovered only after a fresh verified read", async () => {
   assert.deepEqual(await fixture({ once: true }).reader(null), {
     cid,
-    version: 2n,
+    version: 2n,publisher:'0x'+'1'.repeat(40),publishedAt:'1',
   });
 });
 test("persistent block and binding disagreements still fail closed", async () => {

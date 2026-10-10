@@ -61,8 +61,8 @@ export function chainReader({ registry, container, rpcs, fetchImpl = fetch }) {
       data: reads[0],
     });
     return version === null
-      ? { cid: result[0], version: result[1] }
-      : { cid: result.cid, version };
+      ? { cid: result[0], version: result[1], publisher:result[2], publishedAt:String(result[3]) }
+      : {cid:result.cid,version,publisher:result.publisher,publishedAt:String(result.publishedAt)};
   }
   return async (version) => {
     // Retry transport/missing-block failures once with fresh heads. Never reduce quorum

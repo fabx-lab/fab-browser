@@ -20,7 +20,8 @@
     "verify:client": "node scripts/verify-client.mjs"
   },
   "dependencies": {
-    "viem": "2.56.7"
+    "viem": "2.56.7",
+    "ws": "8.22.0"
   },
   "devDependencies": {
     "electron": "44.4.1",
@@ -40,7 +41,8 @@
       "package.json",
       "LICENSE",
       "UPSTREAM.md",
-      "vendor/**/*"
+      "vendor/**/*",
+      "bridge/**/*"
     ],
     "mac": {
       "target": [
@@ -66,7 +68,15 @@
       "category": "Network",
       "artifactName": "FABDeWEB-${version}-linux-${arch}.${ext}",
       "icon": "build/icon.png"
-    }
+    },
+    "protocols": [
+      {
+        "name": "FAB application",
+        "schemes": [
+          "fab"
+        ]
+      }
+    ]
   },
   "author": "cybercity001"
 }

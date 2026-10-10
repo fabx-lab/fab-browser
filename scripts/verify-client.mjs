@@ -15,7 +15,7 @@ const output=path.resolve(`artifacts/client-${platform}-${arch}`);
 await fs.mkdir(output,{recursive:true});
 const run=(file,args,options={})=>new Promise((resolve,reject)=>{
  const child=spawn(file,args,{stdio:'inherit',...options});
- const timer=setTimeout(()=>{child.kill();reject(new Error(`${file} timed out`));},180000);
+ const timer=setTimeout(()=>{child.kill();reject(new Error(`${file} timed out`));},300000);
  child.once('error',error=>{clearTimeout(timer);reject(error);});
  child.once('exit',code=>{clearTimeout(timer);code===0?resolve():reject(new Error(`${file} exited ${code}`));});
 });

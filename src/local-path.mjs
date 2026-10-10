@@ -1,0 +1,1 @@
+export function normalizePath(value){const path=decodeURIComponent(String(value||'/')).replace(/^\/+/, '');if(path.includes('\\')||path.includes('\0')||path.split('/').some(part=>part.startsWith('.')))throw new Error('Invalid preview path');return !path||path.endsWith('/')?path+'index.html':path;}

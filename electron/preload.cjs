@@ -1,5 +1,16 @@
 const {contextBridge, ipcRenderer} = require('electron');
 contextBridge.exposeInMainWorld('fabBrowser', {
+  siteBalance:()=>ipcRenderer.invoke('siteBalance'),walletSwitch:()=>ipcRenderer.invoke('walletSwitch'),
+  checkSite:()=>ipcRenderer.invoke('checkSite'),
+  catalogCancel:()=>ipcRenderer.invoke('catalogCancel'),
+  catalog:()=>ipcRenderer.invoke('catalog'),catalogRefresh:()=>ipcRenderer.invoke('catalogRefresh'),catalogOwners:()=>ipcRenderer.invoke('catalogOwners'),ownedCircuits:()=>ipcRenderer.invoke('ownedCircuits'),configureGateway:value=>ipcRenderer.invoke('configureGateway',value),
+  onCatalogProgress:callback=>ipcRenderer.on('catalogProgress',(_e,value)=>callback(value)),
+  cacheUsage:()=>ipcRenderer.invoke('cacheUsage'),clearCache:()=>ipcRenderer.invoke('clearCache'),offlineOpen:container=>ipcRenderer.invoke('offlineOpen',container),siteInfo:()=>ipcRenderer.invoke('siteInfo'),siteAudit:()=>ipcRenderer.invoke('siteAudit'),
+  management:open=>ipcRenderer.invoke('management',open),
+  localOpen:()=>ipcRenderer.invoke('localOpen'),localInspect:()=>ipcRenderer.invoke('localInspect'),localReveal:()=>ipcRenderer.invoke('localReveal'),
+  walletOpen:()=>ipcRenderer.invoke('walletOpen'),walletDisconnect:()=>ipcRenderer.invoke('walletDisconnect'),walletRevoke:origin=>ipcRenderer.invoke('walletRevoke',origin),walletStatus:()=>ipcRenderer.invoke('walletStatus'),
+  settings:()=>ipcRenderer.invoke('settings'),saveRpcs:urls=>ipcRenderer.invoke('saveRpcs',urls),saveLanguage:lang=>ipcRenderer.invoke('saveLanguage',lang),
+  onWalletState:callback=>ipcRenderer.on('walletState',(_e,value)=>callback(value)),onLocalReport:callback=>ipcRenderer.on('localReport',(_e,value)=>callback(value)),onShowSettings:callback=>ipcRenderer.on('showSettings',()=>callback()),
   stop:()=>ipcRenderer.invoke('stop'),
   zoom:direction=>ipcRenderer.invoke('zoom',direction),
   find:(text,options)=>ipcRenderer.invoke('find',text,options),

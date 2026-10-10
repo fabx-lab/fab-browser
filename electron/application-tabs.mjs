@@ -1,10 +1,10 @@
 // Adapted from TapeBrowser's per-tab WebContentsView lifecycle (UPSTREAM.md).
 // The shell owns tab state; application content receives no management bridge.
-export function createApplicationTabs({window,WebContentsView,session,config,resolveApp,parseTarget,safeOrigin,allowedNavigation,library,smoke=false,onChange,onState,getLayout,onView=()=>{},onFind=()=>{}}){
+export function createApplicationTabs({window,WebContentsView,session,config,resolveApp,parseTarget,safeOrigin,allowedNavigation,library,preload,onSession=()=>{},smoke=false,onChange,onState,getLayout,onView=()=>{},onFind=()=>{},audit}){
  const tabs=new Map();let sequence=0,activeId;
  const blank=()=>({status:'blank',message:'选择应用，无需钱包即可访问。'});
  const active=()=>tabs.get(activeId);
- const snapshot=()=>({activeId,tabs:[...tabs.values()].map(t=>({id:t.id,title:t.state.status==='loading'?'正在打开…':t.state.title||'新标签页',status:t.state.status,url:t.state.url||'',target:t.target||''}))});
+ const snapshot=()=>({activeId,tabs:[...tabs.values()].map(t=>({id:t.id,title:t.state.status==='loading'?'正在打开…':t.state.title||'新标签页',icon:t.state.icon||'',loading:!!t.state.pageLoading,status:t.state.status,url:t.state.url||'',target:t.target||''}))});
  function layout(){const geometry=getLayout();for(const t of tabs.values())if(t.view){t.view.setBounds(geometry.application);t.view.setVisible(t.id===activeId&&t.state.status==='ready'&&!geometry.hideApplication);}}
  function push(){layout();onChange(snapshot());onState({...active().state,target:active().target||'',zoom:Math.round((active().view?.webContents.getZoomFactor?.()||1)*100),canGoBack:!!active().view?.webContents.navigationHistory?.canGoBack(),canGoForward:!!active().view?.webContents.navigationHistory?.canGoForward()});}
  function open(raw,{background=false}={}){if(!background)stopFind();const t={id:++sequence,target:'',request:0,state:blank(),view:null};tabs.set(t.id,t);if(!background||!activeId)activeId=t.id;push();if(raw)void navigate(raw,t.id);return t.id;}
@@ -16,16 +16,17 @@ export function createApplicationTabs({window,WebContentsView,session,config,res
   const pending=()=>tabs.get(t.id)===t&&t.request===request;
   t.state={...t.state,status:'loading',message:'正在核对 X Layer 双 RPC…'};push();
   try{
-   const target=parseTarget(raw,config.apps),web=target.kind==='web',resolved=web?{...target,verification:'普通网页 · 未进行 FAB 链上绑定核验'}:await resolveApp(target,config);
+   const target=parseTarget(raw,config.apps),web=target.kind==='web',local=target.kind==='local',resolved=web||local?{...target,verification:local?'本地预览 · 未发布到 IPFS':'普通网页 · 未进行 FAB 链上绑定核验'}:await resolveApp(target,config);
    if(!pending())return;
-   destroyView(t);t.loadedState=null;
+   destroyView(t);t.loadedState=null;if(audit&&!local)audit.reset(web?new URL(resolved.url).origin:target.gateway);
    // Version-specific sessions prevent one tab replacing another version's request guard.
-   const partition=web?`${smoke?'fab-smoke-':'persist:fab-'}web`:`${smoke?'fab-smoke-':'persist:fab-'}${config.chainId}-${target.container.toLowerCase()}-${resolved.version}`;
-   const isolated=session.fromPartition(partition),origin=web?null:safeOrigin(target.gateway);
-   const allowed=value=>{if(!web)return allowedNavigation(value,origin,resolved.version);try{const u=new URL(value);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password&&!config.apps.some(a=>safeOrigin(a.gateway)===u.origin);}catch{return false;}};
+   const partition=local?`${smoke?'fab-smoke-':'persist:fab-'}local-${target.localHost}`:web?`${smoke?'fab-smoke-':'persist:fab-'}web`:`${smoke?'fab-smoke-':'persist:fab-'}${config.chainId}-${config.registry.toLowerCase()}-${target.container.toLowerCase()}-${resolved.version}-${resolved.cid}${resolved.offline?'-offline':''}`;
+   const isolated=session.fromPartition(partition),origin=web||local?null:safeOrigin(target.gateway);
+   await onSession(isolated,target,resolved);if(!pending())return;
+   const allowed=value=>{if(local){try{const u=new URL(value);return u.protocol==='fab-local:'&&u.host===target.localHost&&!u.username&&!u.password;}catch{return false;}}if(!web)return allowedNavigation(value,origin,resolved.version);try{const u=new URL(value);return /^https?:$/.test(u.protocol)&&!u.username&&!u.password&&!config.apps.some(a=>safeOrigin(a.gateway)===u.origin);}catch{return false;}};
    isolated.setPermissionRequestHandler((_wc,_permission,callback)=>callback(false));isolated.setPermissionCheckHandler(()=>false);
-   isolated.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!(web&&/^(data|blob):/.test(details.url))&&!allowed(details.url)}));
-   const view=new WebContentsView({webPreferences:{session:isolated,nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,devTools:true}});
+   isolated.webRequest.onBeforeRequest((details,callback)=>{const cancel=!((web||local)&&/^(data|blob):/.test(details.url))&&!allowed(details.url);if(cancel&&audit&&!local)audit.external(web?new URL(resolved.url).origin:origin,details.url,details.resourceType);callback({cancel});});
+   const view=new WebContentsView({webPreferences:{session:isolated,...(!local&&preload?{preload}:{}),nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,devTools:true}});
    t.view=view;window.contentView.addChildView(view);layout();onView(view,t);
    const valid=()=>tabs.get(t.id)===t&&t.view===view;
    view.webContents.setWindowOpenHandler(({url,disposition})=>{if(allowed(url))open(url,{background:disposition==='background-tab'});return {action:'deny'};});
@@ -36,10 +37,13 @@ export function createApplicationTabs({window,WebContentsView,session,config,res
    view.webContents.on('zoom-changed',(_event,direction)=>zoom(direction==='in'?1:-1,t.id));
    view.webContents.on('did-fail-load',(_event,code,description,_url,mainFrame)=>{if(mainFrame&&code!==-3&&valid()){t.state={...resolved,status:'error',message:`应用加载失败 ${code}: ${description}`};push();}});
    for(const event of ['did-navigate','did-navigate-in-page'])view.webContents.on(event,()=>{if(valid()){if(web){const url=view.webContents.getURL();if(allowed(url)){t.target=url;t.state={...t.state,url,kind:'web'};}}push();}});
-   view.webContents.on('page-title-updated',(_event,title)=>{if(valid()&&web){t.state={...t.state,title:String(title).slice(0,500)};push();}});
+   view.webContents.on('did-start-loading',()=>{if(valid()){t.state={...t.state,pageLoading:true};push();}});
+   view.webContents.on('did-stop-loading',()=>{if(valid()){t.state={...t.state,pageLoading:false};push();}});
+   view.webContents.on('page-favicon-updated',async(_event,icons)=>{const url=icons.find(allowed);if(!url)return;try{const response=await isolated.fetch(url,{credentials:'omit',redirect:'error',signal:AbortSignal.timeout(5000)});const type=response.headers.get('content-type')?.split(';')[0];if(!response.ok||!['image/png','image/jpeg','image/x-icon','image/vnd.microsoft.icon'].includes(type))return;const reader=response.body.getReader(),chunks=[];let size=0;try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>50*1024)return;chunks.push(value);}}finally{await reader.cancel().catch(()=>{});}if(valid()){t.state={...t.state,icon:`data:${type};base64,${Buffer.concat(chunks).toString('base64')}`};push();}}catch{}});
+   view.webContents.on('page-title-updated',(_event,title)=>{if(valid()){t.state={...t.state,title:String(title).slice(0,500)};push();}});
    await view.webContents.loadURL(resolved.url);
    if(!pending()||!valid())return;
-   t.state={...resolved,...(web?{url:view.webContents.getURL?.()||resolved.url,title:view.webContents.getTitle?.()||resolved.title}:{}),status:'ready',message:resolved.verification};t.loadedState=t.state;library.visit(target.container||resolved.url);push();
+   t.state={...resolved,...(web?{url:view.webContents.getURL?.()||resolved.url,title:view.webContents.getTitle?.()||resolved.title}:{}),status:'ready',message:resolved.verification};t.loadedState=t.state;if(!local)library.visit(target.container||resolved.url);push();
   }catch(error){if(pending()){t.state={status:'error',message:error.message};push();}}
  }
  function reload(){if(active().target)return navigate(active().target);}
@@ -55,5 +59,5 @@ export function createApplicationTabs({window,WebContentsView,session,config,res
  function select(index){const ids=[...tabs.keys()];const id=index===8?ids.at(-1):ids[index];if(id)activate(id);}
  function devtools(){active().view?.webContents.toggleDevTools();}
  function dispose(){for(const t of tabs.values()){t.request++;destroyView(t);}tabs.clear();}
- return {open,close,activate,navigate,reload,back,forward,stop,find,stopFind,zoom,cycle,select,devtools,layout,dispose,snapshot,active,site:()=>active()?.view,state:()=>active()?.state};
+ return {open,close,activate,navigate,reload,back,forward,stop,find,stopFind,zoom,cycle,select,devtools,layout,dispose,snapshot,active,views:()=>[...tabs.values()].map(t=>t.view).filter(Boolean),owns:wc=>[...tabs.values()].some(t=>t.view?.webContents===wc),site:()=>active()?.view,state:()=>active()?.state};
 }

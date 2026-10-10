@@ -13,9 +13,9 @@ function renderTabs(snapshot){
  if(changed)void setFind(false);
  const list=$('tabs');list.replaceChildren();
  for(const tab of snapshot.tabs){
-  const row=document.createElement('div');row.className='browser-tab'+(tab.id===activeId?' selected':'');row.setAttribute('role','presentation');
+  const row=document.createElement('div');row.className='browser-tab'+(tab.loading||tab.status==='loading'?' loading':'')+(tab.id===activeId?' selected':'');row.setAttribute('role','presentation');
   const select=document.createElement('button');select.className='tab-select';select.type='button';select.setAttribute('role','tab');select.setAttribute('aria-selected',String(tab.id===activeId));select.tabIndex=tab.id===activeId?0:-1;select.title=tab.title;
-  const dot=document.createElement('span');dot.className='app-dot';dot.setAttribute('aria-hidden','true');
+  const dot=document.createElement(tab.icon?'img':'span');if(tab.icon){dot.src=tab.icon;dot.alt='';}dot.className=tab.icon?'tab-favicon':'app-dot';dot.setAttribute('aria-hidden','true');
   const title=document.createElement('span');title.className='tab-title';title.textContent=tab.title;
   select.append(dot,title);select.onclick=()=>api.activateTab(tab.id).catch(fail);
   select.onkeydown=event=>{if(!['ArrowLeft','ArrowRight'].includes(event.key))return;event.preventDefault();const i=snapshot.tabs.findIndex(t=>t.id===tab.id),next=snapshot.tabs[(i+(event.key==='ArrowRight'?1:snapshot.tabs.length-1))%snapshot.tabs.length];void api.activateTab(next.id).then(()=>list.querySelector('[aria-selected="true"]')?.focus()).catch(fail);};
@@ -79,24 +79,27 @@ async function refreshLibrary(){
 }
 $('bookmark').onclick=async()=>{try{await api.bookmark();await refreshLibrary();}catch(error){fail(error);}};
 $('clear-history').onclick=async()=>{try{await api.clearHistory();await refreshLibrary();}catch(error){fail(error);}};
-api.onState(state=>{
+function renderState(state){
  document.body.dataset.state=state.status;
- $('status').textContent=state.status==='ready'?(state.kind==='web'?'普通网页 · 未进行 FAB 链上绑定核验':'网站已打开 · 链上绑定已核对'):state.message;
+ $('site-info').hidden=!state.container||state.status!=='ready';$('offline-open').hidden=state.status!=='error';
+ $('status').textContent=state.offline?'历史缓存 · 当前链上版本和所有权未核验':state.status==='ready'?(state.kind==='local'?'本地预览 · 未发布到 IPFS':state.kind==='web'?'普通网页 · 未进行 FAB 链上绑定核验':'网站已打开 · 链上绑定已核对'):state.message;
  $('status').title=state.message;
- $('bookmark').disabled=state.status!=='ready';
+ $('bookmark').disabled=state.status!=='ready'||state.kind==='local';
+ $('local-inspect').hidden=$('local-reveal').hidden=state.kind!=='local'||state.status!=='ready';
  $('stop').hidden=state.status!=='loading';$('reload').hidden=state.status==='loading';
  $('zoom-reset').hidden=!state.zoom||state.zoom===100;$('zoom-reset').textContent=`${state.zoom||100}%`;
  $('back').disabled=!state.canGoBack;$('forward').disabled=!state.canGoForward;
  $('start-page').hidden=state.status==='ready';
  if(state.status==='ready'){
   current=state;$('input').value=state.url;
-  $('identity').textContent=state.title;$('metadata').hidden=state.kind==='web';
+  $('identity').textContent=state.title;$('metadata').hidden=state.kind==='web'||state.kind==='local';
   $('meta-chain').textContent=`X Layer ${state.chainId}`;$('meta-version').textContent=state.version;
   $('meta-cid').textContent=state.cid;$('meta-container').textContent=state.container;
-  $('release-label').textContent=state.kind==='web'?'普通网页':`X Layer ${state.chainId} · v${state.version}`;
+  $('release-label').textContent=state.offline?`历史缓存 · v${state.version}`:state.kind==='local'?'本地预览':state.kind==='web'?'普通网页':`X Layer ${state.chainId} · v${state.version}`;
   void refreshLibrary().catch(fail);
  }else{current=undefined;$('metadata').hidden=true;$('identity').textContent='打开应用后查看链上绑定信息。';$('release-label').textContent='FAB 测试环境';}
-});
+}
+api.onState(renderState);if(initial.currentState)renderState(initial.currentState);
 void refreshLibrary().catch(fail);
 
 document.body.dataset.uiReady='true';
