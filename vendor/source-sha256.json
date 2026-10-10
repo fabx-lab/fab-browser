@@ -1,0 +1,15 @@
+{
+  "TapeKit/apps/tapesend/electron/main.mjs": "74caec438f76caa335c2929f02b50f2a794aa630c08c43e677e590cda1a20646",
+  "TapeKit/apps/tapesend/electron/preload.cjs": "91212ac8ed946c53f8564eb0386abb202934f83ea4b5eaae341ad7a38edea68c",
+  "TapeKit/apps/tapesend/src/browser/BrowserView.tsx": "5f3c070f1040ccde0abef09562d092848b0b01de7c05f0c24b12fc0aa47dcdaa",
+  "TapeKit/kernel/src/kernel.js": "ea3fa7436d8c2a2876002a56ca50a90c03df68cbca2ccae2239dd7801288c8bd",
+  "TapeKit/kernel/src/config.js": "2c374b1a3e28d2fe615e8f94a3ebd428d17564bb91036dfedfab04030691ee9c",
+  "pod-contract/tools/deweb/chain-reader.mjs": "ca8228461530efaec9819761da627507a0af0a36eac8d01cf8d19a0fd51a6e70",
+  "pod-contract/tools/deweb/registry-abi.mjs": "f09aee88c7de9ab11566fb8361aaf6bef31d295a18631971e249e5ae30484ce2",
+  "trytotapeout/TapeBrowser/src/main/library.js": "dd046a0e811834217c7d68570d045322753027c5ce6e289dfcab17a7d362ef91",
+  "trytotapeout/TapeBrowser/src/main/address.js": "b500230932862adf1be1765cbaad0eee48620933605c81f7e93e4449f6d89b17",
+  "trytotapeout/TapeBrowser/src/main/tabs.js": "2e505b4d9db94929d2f44640a7c8520f0e81230d41cf9dcea5e81751bd859b0c",
+  "trytotapeout/TapeBrowser/src/main/main.js": "ef27e74cfa7492bf45a64ea4655c3f7e0e6bb885f016984ea553ce408b021bec",
+  "trytotapeout/TapeBrowser/LICENSE": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+  "trytotapeout/TapeBrowser/package.json": "ea28edc237a0d4692f13dd0440353b7c64fc591608793f577451a6496ad9f052"
+}

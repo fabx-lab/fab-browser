@@ -1,0 +1,72 @@
+{
+  "name": "fab-browser",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FAB DeWEB isolated desktop browser for IPFS releases bound to circuit NFTs",
+  "type": "module",
+  "main": "electron/main.mjs",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.mjs",
+    "build": "node scripts/build.mjs",
+    "smoke": "electron . --fab-smoke",
+    "dist:mac": "electron-builder --mac --arm64 --x64 --publish never",
+    "dist:win": "electron-builder --win --x64 --publish never",
+    "dist:linux": "electron-builder --linux --x64 --publish never",
+    "verify:client": "node scripts/verify-client.mjs"
+  },
+  "dependencies": {
+    "viem": "2.56.7"
+  },
+  "devDependencies": {
+    "electron": "44.4.1",
+    "electron-builder": "26.15.3"
+  },
+  "packageManager": "pnpm@10.33.0+sha512.10568bb4a6afb58c9eb3630da90cc9516417abebd3fabbe6739f0ae795728da1491e9db5a544c76ad8eb7570f5c4bb3d6c637b2cb41bfdcdb47fa823c8649319",
+  "build": {
+    "appId": "com.fabx.deweb.browser",
+    "productName": "FABDeWEB",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "src/**/*",
+      "ui/**/*",
+      "package.json",
+      "LICENSE",
+      "UPSTREAM.md",
+      "vendor/**/*"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "identity": "-",
+      "hardenedRuntime": false,
+      "artifactName": "FABDeWEB-${version}-mac-${arch}.${ext}",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "FABDeWEB-${version}-win-${arch}-setup.${ext}",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "executableName": "fab-deweb",
+      "category": "Network",
+      "artifactName": "FABDeWEB-${version}-linux-${arch}.${ext}",
+      "icon": "build/icon.png"
+    }
+  },
+  "author": "cybercity001"
+}
