@@ -1,0 +1,4 @@
+{
+  "name": "FAB Browser",
+  "install": "set -euo pipefail\npnpm install --frozen-lockfile\nnode node_modules/electron/install.js"
+}
